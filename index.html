@@ -347,7 +347,7 @@
     <div class="dashboard">
         <header>
             <div>
-                <h1>Neural Architect <span class="badge">v1.1.4</span></h1>
+                <h1>Neural Architect <span class="badge">v1.1.5</span></h1>
             </div>
             <div>
                 <button class="btn-outline" onclick="clearChat()">🧹 Clear Chat</button>
@@ -1194,7 +1194,7 @@
                 }
             } else if (isCorrectAny) {
                 // 💡 Soft Match (Correct but not current target)
-                consecutiveWins = 0; // Reset streak since we want to master the target variant specifically
+                // consecutiveWins is PERSISTED (not reset, but not advanced)
                 rewardCount++;
                 document.getElementById('reward-count').innerText = rewardCount;
 
@@ -1206,8 +1206,20 @@
                 reward();
 
                 let term = document.getElementById('terminal');
-                term.innerHTML += `<div style="text-align:center; color: #ffcc00; margin: 10px; font-size: 0.8rem; font-style: italic;">💡 Acceptable variant detected! Streak reset to 0 until target matched consistently. 💡</div>`;
+                term.innerHTML += `<div style="text-align:center; color: #ffcc00; margin: 10px; font-size: 0.8rem; font-style: italic;">💡 Soft Match! Nudging weights towards target variant... 💡</div>`;
                 term.scrollTop = term.scrollHeight;
+
+                // 🧠 Nudge Mechanism: Silently correct history and run light training
+                let lines = history.trim().split('\n');
+                if (lines.length > 0) {
+                    lines[lines.length - 1] = 'Assistant: ' + currentPair.targets[currentVariantIndex];
+                    history = lines.join('\n') + '\n';
+                }
+
+                // Light training (3 mini-epochs) to bias towards target
+                for (let i = 0; i < 3; i++) {
+                    trainOnHistory();
+                }
             } else {
                 // ❌ Fail (Wrong Response)
                 consecutiveWins = 0;
