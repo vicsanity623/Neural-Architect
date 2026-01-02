@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Neural Assistant Builder</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0f;
+            --panel-bg: rgba(20, 20, 30, 0.8);
+            --params-bg: rgba(0, 0, 0, 0.5);
+            --primary: #00ffbc;
+            --secondary: #00b8ff;
+            --danger: #ff3366;
+            --warning: #ffcc00;
+            --text-main: #e0e0e0;
+            --text-muted: #888;
+            --font-mono: 'Menlo', 'Consolas', 'Courier New', monospace;
+            --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --radius: 12px;
+            --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-image: radial-gradient(circle at 50% 10%, #1a1a2e 0%, #000 100%);
+        }
+
+        /* Layout */
+        .dashboard {
+            max-width: 1200px;
+            width: 100%;
+            height: 100%;
+            margin: 0 auto;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 20px;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+
+        .badge {
+            background: rgba(0, 255, 188, 0.1);
+            color: var(--primary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        /* Main Terminal Area */
+        .terminal-container {
+            background: var(--panel-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        #terminal {
+            flex: 1;
+            padding: 20px;
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            overflow-y: auto;
+            color: #d0d0d0;
+            white-space: pre-wrap;
+        }
+
+        .user-line {
+            color: var(--secondary);
+            font-weight: bold;
+        }
+
+        .ai-line {
+            color: var(--primary);
+        }
+
+        /* Input Area */
+        .input-area {
+            display: flex;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            gap: 10px;
+        }
+
+        #input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        #input:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 10px rgba(0, 184, 255, 0.2);
+        }
+
+        /* Controls Panel */
+        .controls {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: var(--shadow);
+        }
+
+        .stats-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .btn-group.bottom {
+            margin-bottom: 0;
+        }
+
+        button {
+            padding: 10px 18px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: var(--secondary);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: #33c7ff;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--primary);
+            color: #000;
+        }
+
+        .btn-success:hover {
+            background: #33ffcc;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-main);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Loss Meter */
+        .metric-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-main);
+        }
+
+        .progress-track {
+            background: rgba(255, 255, 255, 0.1);
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            transition: width 0.3s, background-color 0.3s;
+        }
+
+        /* Details/Guide */
+        details {
+            color: #aaa;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        summary {
+            cursor: pointer;
+            color: var(--secondary);
+            outline: none;
+            margin-bottom: 5px;
+        }
+
+        details p {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 6px;
+            margin: 5px 0 0 0;
+            line-height: 1.6;
+        }
+
+        strong {
+            color: white;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Animations */
+        @keyframes flash-glow {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 255, 188, 0.7);
+                transform: scale(1);
+            }
+
+            50% {
+                box-shadow: 0 0 20px 10px rgba(0, 255, 188, 0);
+                transform: scale(1.05);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 255, 188, 0);
+                transform: scale(1);
+            }
+        }
+
+        .flash-active {
+            animation: flash-glow 0.5s ease-out;
+        }
+
+        @keyframes flash-glow-red {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 51, 102, 0.7);
+                transform: scale(1);
+            }
+
+            50% {
+                box-shadow: 0 0 20px 10px rgba(255, 51, 102, 0);
+                transform: scale(1.05);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 51, 102, 0);
+                transform: scale(1);
+            }
+        }
+
+        .flash-active-red {
+            animation: flash-glow-red 0.5s ease-out;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard">
+        <header>
+            <div>
+                <h1>Neural Architect <span class="badge">v1.1</span></h1>
+            </div>
+            <div>
+                <button class="btn-outline" onclick="clearChat()">🧹 Clear Chat</button>
+                <div style="display:inline-block; width: 10px;"></div>
+                <button class="btn-outline" onclick="saveBrain()">Save Brain</button>
+                <button class="btn-outline" onclick="document.getElementById('file-input').click()">Load Brain</button>
+                <input type="file" id="file-input" style="display: none;" onchange="loadBrain(this)">
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="terminal-container">
+            <div id="terminal">
+                <div style="color: var(--text-muted); text-align: center; margin-top: 150px;">
+                    Neural Network Initialized.<br>Type a message to begin training...
+                </div>
+            </div>
+            <div class="input-area">
+                <input type="text" id="input" placeholder="Type your message here..."
+                    onkeypress="if(event.keyCode===13) send();" autocomplete="off">
+                <button class="btn-primary" onclick="send()">Send</button>
+            </div>
+        </main>
+
+        <!-- Control Deck -->
+        <section class="controls">
+            <!-- Training Controls -->
+            <div class="panel">
+                <div class="btn-group bottom">
+                    <button id="btn-reward" class="btn-success" onclick="reward()">Reward (Good)</button>
+                    <button id="btn-penalize" class="btn-danger" onclick="penalize()">Penalize (Bad)</button>
+                    <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 10px;"></div>
+                    <button class="btn-outline" onclick="trainEpochs()">⚡ Train (10 Epochs)</button>
+                    <button id="btn-auto" class="btn-outline" onclick="autoTrain()">🤖 Auto Train</button>
+                    <button class="btn-danger" style="margin-left: auto;" onclick="resetBrain()">Reset Brain</button>
+                </div>
+
+                <details>
+                    <summary><strong>📚 How to Teach (Guide)</strong></summary>
+                    <p>
+                        1. <strong>Chat</strong>: Type "Hello" and hit Send.<br>
+                        2. <strong>Feedback</strong>: If the reply is gibberish, click <strong>Penalize</strong> and
+                        enter the correct reply (e.g., "Hi there").<br>
+                        3. <strong>Cement</strong>: Click <strong>⚡ Train</strong> immediately. This runs 10 rapid
+                        training loops on the corrected history.<br>
+                        4. <strong>Observe</strong>: Watch the 'Loss Value' drop. Aim for &lt; 1.0 for reliable
+                        responses.
+                    </p>
+                </details>
+            </div>
+
+            <!-- Stats Panel -->
+            <div class="panel stats-panel">
+                <span class="metric-label">Current Loss Value (Confusion Assessment)</span>
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <span class="metric-value" id="loss-display">--.----</span>
+                    <span id="loss-info" style="font-size: 0.8rem; color: var(--text-muted);">Lower is Better</span>
+                </div>
+                <div class="progress-track">
+                    <div id="loss-bar" class="progress-fill"></div>
+                </div>
+                <div id="auto-score"
+                    style="margin-top: 10px; font-size: 0.75rem; color: var(--text-muted); display: none;">
+                    <span style="color: #00ffbc;">✓ Rewards: <span id="reward-count">0</span></span> |
+                    <span style="color: #ff3366;">✗ Penalties: <span id="penalty-count">0</span></span> |
+                    <span>Loops: <span id="loop-count">0</span></span> |
+                    <span style="color: gold;">Mastery: <span id="mastery-percent">0</span>%</span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        window.onerror = function (msg, url, line, col, error) {
+            alert("Error: " + msg + "\nLine: " + line + "\nCol: " + col + "\nStack: " + (error ? error.stack : "n/a"));
+            // Reset button if stuck
+            let btn = document.querySelector('button[onclick="send()"]');
+            if (btn) btn.innerText = "Send";
+        };
+        window.onunhandledrejection = function (e) {
+            alert("Unhandled Promise Rejection: " + e.reason);
+        };
+
+        // Matrix utility functions
+        function createMatrix(rows, cols, value = 0) {
+            let m = new Array(rows);
+            for (let i = 0; i < rows; i++) {
+                m[i] = new Array(cols).fill(value);
+            }
+            return m;
+        }
+
+        function createRandomMatrix(rows, cols) {
+            let m = new Array(rows);
+            for (let i = 0; i < rows; i++) {
+                m[i] = new Array(cols);
+                for (let j = 0; j < cols; j++) {
+                    m[i][j] = Math.random() * 0.2 - 0.1;
+                }
+            }
+            return m;
+        }
+
+        function matmul(a, b) {
+            let rowsA = a.length, colsA = a[0].length, rowsB = b.length, colsB = b[0].length;
+            if (colsA !== rowsB) throw new Error("Matrix dimensions mismatch for multiplication");
+            let result = createMatrix(rowsA, colsB, 0);
+            for (let i = 0; i < rowsA; i++) {
+                for (let j = 0; j < colsB; j++) {
+                    for (let k = 0; k < colsA; k++) {
+                        result[i][j] += a[i][k] * b[k][j];
+                    }
+                }
+            }
+            return result;
+        }
+
+        function addMatrix(a, b) {
+            let rows = a.length, cols = a[0].length;
+            let result = createMatrix(rows, cols, 0);
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    result[i][j] = a[i][j] + b[i][j];
+                }
+            }
+            return result;
+        }
+
+        function subtractMatrix(a, b) {
+            let rows = a.length, cols = a[0].length;
+            let result = createMatrix(rows, cols, 0);
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    result[i][j] = a[i][j] - b[i][j];
+                }
+            }
+            return result;
+        }
+
+        function multiplyMatrix(a, b) { // element-wise
+            let rows = a.length, cols = a[0].length;
+            let result = createMatrix(rows, cols, 0);
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    result[i][j] = a[i][j] * b[i][j];
+                }
+            }
+            return result;
+        }
+
+        function scaleMatrix(s, a) {
+            let rows = a.length, cols = a[0].length;
+            let result = createMatrix(rows, cols, 0);
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    result[i][j] = s * a[i][j];
+                }
+            }
+            return result;
+        }
+
+        function transpose(a) {
+            let rows = a.length, cols = a[0].length;
+            let result = createMatrix(cols, rows, 0);
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    result[j][i] = a[i][j];
+                }
+            }
+            return result;
+        }
+
+        function mapMatrix(m, func) {
+            let rows = m.length, cols = m[0].length;
+            let result = createMatrix(rows, cols, 0);
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    result[i][j] = func(m[i][j]);
+                }
+            }
+            return result;
+        }
+
+        function softmax(m) {
+            let arr = m.map(row => row[0]);
+            let max = Math.max(...arr);
+            let exps = arr.map(v => Math.exp(v - max));
+            let sum = exps.reduce((acc, v) => acc + v, 0);
+            let soft = exps.map(v => v / sum);
+            return soft.map(v => [v]);
+        }
+
+        function argmax(arr) {
+            let max = arr[0];
+            let maxIndex = 0;
+            for (let i = 1; i < arr.length; i++) {
+                if (arr[i] > max) {
+                    max = arr[i];
+                    maxIndex = i;
+                }
+            }
+            return maxIndex;
+        }
+
+        function sample(probs) {
+            let sum = 0;
+            let r = Math.random();
+            for (let i = 0; i < probs.length; i++) {
+                sum += probs[i];
+                if (r < sum) return i;
+            }
+            return probs.length - 1;
+        }
+
+        function oneHot(idx, size) {
+            let arr = new Array(size).fill(0);
+            arr[idx] = 1;
+            return arr;
+        }
+
+        function fromArray(arr) {
+            return arr.map(v => [v]);
+        }
+
+        function toArray(m) {
+            return m.map(row => row[0]);
+        }
+
+        // RNN class
+        class RNN {
+            constructor(inputSize, hiddenSize, outputSize) {
+                this.inputSize = inputSize;
+                this.hiddenSize = hiddenSize;
+                this.outputSize = outputSize;
+                this.learning_rate = 0.01; // Tuned for stability with larger brain
+
+                this.Wxh = createRandomMatrix(this.hiddenSize, this.inputSize);
+                this.Whh = createRandomMatrix(this.hiddenSize, this.hiddenSize);
+                this.Why = createRandomMatrix(this.outputSize, this.hiddenSize);
+                this.bh = createMatrix(this.hiddenSize, 1, 0);
+                this.by = createMatrix(this.outputSize, 1, 0);
+            }
+
+            forward(inputs) {
+                let h = createMatrix(this.hiddenSize, 1, 0);
+                let hs = [];
+                let outputs = [];
+                for (let t = 0; t < inputs.length; t++) {
+                    let x = inputs[t];
+                    let mul1 = matmul(this.Wxh, x);
+                    let mul2 = matmul(this.Whh, h);
+                    h = addMatrix(addMatrix(mul1, mul2), this.bh);
+                    h = mapMatrix(h, Math.tanh);
+                    hs.push(h.map(row => [row[0]])); // copy
+                    let o = addMatrix(matmul(this.Why, h), this.by);
+                    outputs.push(softmax(o));
+                }
+                return { outputs, hs, lastHidden: h };
+            }
+
+            train(inputs, targets) {
+                let { outputs, hs } = this.forward(inputs);
+
+                // Calculate Loss (Cross Entropy)
+                let loss = 0;
+                for (let t = 0; t < outputs.length; t++) {
+                    let targetIdx = argmax(toArray(targets[t]));
+                    let probs = toArray(outputs[t]);
+                    let p = Math.max(probs[targetIdx], 1e-10); // avoid log(0)
+                    loss += -Math.log(p);
+                }
+                let avgLoss = loss / outputs.length;
+
+                let grad_Wxh = createMatrix(this.hiddenSize, this.inputSize, 0);
+                let grad_Whh = createMatrix(this.hiddenSize, this.hiddenSize, 0);
+                let grad_Why = createMatrix(this.outputSize, this.hiddenSize, 0);
+                let grad_bh = createMatrix(this.hiddenSize, 1, 0);
+                let grad_by = createMatrix(this.outputSize, 1, 0);
+                let dhnext = createMatrix(this.hiddenSize, 1, 0);
+
+                for (let t = inputs.length - 1; t >= 0; t--) {
+                    // Error = Output - Target (Standard for Cross-Entropy + Softmax)
+                    // Previously it was Target - Output, which caused Gradient Ascent (Maximizing Error)
+                    let output_error = subtractMatrix(outputs[t], targets[t]);
+                    let grad_Why_t = matmul(output_error, transpose(hs[t]));
+                    grad_Why = addMatrix(grad_Why, grad_Why_t);
+                    grad_by = addMatrix(grad_by, output_error);
+
+                    let Why_t = transpose(this.Why);
+                    let dhraw = addMatrix(matmul(Why_t, output_error), dhnext);
+
+                    let ones = createMatrix(this.hiddenSize, 1, 1);
+                    let h_squared = mapMatrix(hs[t], x => x * x);
+                    let dtanh = subtractMatrix(ones, h_squared);
+                    let dh = multiplyMatrix(dtanh, dhraw);
+
+                    grad_bh = addMatrix(grad_bh, dh);
+
+                    let grad_Wxh_t = matmul(dh, transpose(inputs[t]));
+                    grad_Wxh = addMatrix(grad_Wxh, grad_Wxh_t);
+
+                    let hprev = (t === 0) ? createMatrix(this.hiddenSize, 1, 0) : hs[t - 1];
+                    let grad_Whh_t = matmul(dh, transpose(hprev));
+                    grad_Whh = addMatrix(grad_Whh, grad_Whh_t);
+
+                    let Whh_t = transpose(this.Whh);
+                    dhnext = matmul(Whh_t, dh);
+                }
+
+                // Gradient Clipping
+                let clip = (m) => mapMatrix(m, v => Math.max(-1, Math.min(1, v)));
+                grad_Wxh = clip(grad_Wxh);
+                grad_Whh = clip(grad_Whh);
+                grad_Why = clip(grad_Why);
+                grad_bh = clip(grad_bh);
+                grad_by = clip(grad_by);
+
+                this.Wxh = subtractMatrix(this.Wxh, scaleMatrix(this.learning_rate, grad_Wxh));
+                this.Whh = subtractMatrix(this.Whh, scaleMatrix(this.learning_rate, grad_Whh));
+                this.Why = subtractMatrix(this.Why, scaleMatrix(this.learning_rate, grad_Why));
+                this.bh = subtractMatrix(this.bh, scaleMatrix(this.learning_rate, grad_bh));
+                this.by = subtractMatrix(this.by, scaleMatrix(this.learning_rate, grad_by));
+
+                return avgLoss;
+            }
+
+            generate(prefix, maxLen) {
+                let chars = prefix.split('');
+                let inputs = chars.map(c => {
+                    let idx = charToIndex[c];
+                    if (idx === undefined) return createMatrix(this.inputSize, 1, 0);
+                    return fromArray(oneHot(idx, this.inputSize));
+                });
+
+                // Run forward pass on the prefix to get the final hidden state
+                let h = createMatrix(this.hiddenSize, 1, 0);
+                for (let t = 0; t < inputs.length; t++) {
+                    let x = inputs[t];
+                    let mul1 = matmul(this.Wxh, x);
+                    let mul2 = matmul(this.Whh, h);
+                    h = addMatrix(addMatrix(mul1, mul2), this.bh);
+                    h = mapMatrix(h, Math.tanh);
+                }
+
+                // Start generating
+                let response = '';
+
+                // We start predicting IMMEDIATELY from the 'h' state left by the prefix.
+                // We do NOT inject a dummy character significantly.
+                // The loop structure: Predict -> Append -> Update State with Prediction
+
+                for (let i = 0; i < maxLen; i++) {
+                    // 1. Predict next char from CURRENT state (h)
+                    let o = addMatrix(matmul(this.Why, h), this.by);
+                    let probs = softmax(o);
+                    let probArray = toArray(probs);
+                    let nextIdx = argmax(probArray);
+                    let currentChar = indexToChar[nextIdx] || '?';
+
+                    if (currentChar === '\n') break; // Allow stopping
+                    response += currentChar;
+
+                    // 2. Feed this predicted char as input for the NEXT step
+                    let x = fromArray(oneHot(nextIdx, this.inputSize));
+                    let mul1 = matmul(this.Wxh, x);
+                    let mul2 = matmul(this.Whh, h);
+                    h = addMatrix(addMatrix(mul1, mul2), this.bh);
+                    h = mapMatrix(h, Math.tanh);
+                }
+
+                return response.trim();
+            }
+        }
+
+        // Vocab setup
+        const charsString = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,?!:;\n-';
+        const chars = charsString.split('');
+        const vocabSize = chars.length;
+        const charToIndex = {};
+        chars.forEach((c, i) => charToIndex[c] = i);
+        const indexToChar = chars;
+
+        // Initialize RNN
+        const HIDDEN_SIZE = 256; // Upgraded for 12-core CPU
+        let rnn = new RNN(vocabSize, HIDDEN_SIZE, vocabSize);
+
+        // History
+        let history = '';
+        let lastLoss = 0.0;
+        let isAutoTraining = false;
+        let trainingQueue = [];
+        let currentPairIndex = 0;
+        let consecutiveWins = 0;
+        let autoLoopCount = 0;
+        let rewardCount = 0;
+        let penaltyCount = 0;
+
+        // Functions
+        async function send() {
+            try {
+                let userMsg = document.getElementById('input').value.trim();
+                if (userMsg === '') return;
+
+                let btn = document.querySelector('button[onclick="send()"]');
+                let originalText = btn.innerText;
+                btn.innerText = "Thinking...";
+
+                // Allow UI to update before blocking
+                await new Promise(r => setTimeout(r, 10));
+
+                document.getElementById('input').value = '';
+
+                // Pretty print the conversation
+                if (history === '') {
+                    document.getElementById('terminal').innerHTML = ''; // Clear welcome msg
+                }
+
+                let userLine = `<span class="user-line">User:</span> ${userMsg}`;
+                let newHistoryDisplay = (document.getElementById('terminal').innerHTML + '\n' + userLine).trim();
+
+                history += 'User: ' + userMsg + '\n';
+                let prefix = history + 'Assistant: ';
+
+                updateTerminalHTML(newHistoryDisplay + '\n<span class="ai-line">Assistant:</span> ...'); // show thinking state
+
+                // Allow UI to update
+                await new Promise(r => setTimeout(r, 10));
+
+                let response = rnn.generate(prefix, 200);
+                history += 'Assistant: ' + response + '\n';
+
+                let finalDisplay = newHistoryDisplay + `\n<span class="ai-line">Assistant:</span> ${response}`;
+                updateTerminalHTML(finalDisplay);
+
+                btn.innerText = originalText;
+            } catch (e) {
+                alert("Error in send(): " + e.message);
+                console.error(e);
+                document.querySelector('button[onclick="send()"]').innerText = "Send";
+            }
+        }
+
+        function updateTerminalHTML(htmlContent) {
+            let term = document.getElementById('terminal');
+            term.innerHTML = htmlContent.replace(/\n/g, '<br>');
+            term.scrollTop = term.scrollHeight;
+        }
+
+        // Override original updateTerminal to work with new styling if needed
+        function updateTerminal() {
+            // Re-render whole history with colors (simple parser)
+            let lines = history.split('\n');
+            let formatted = lines.map(line => {
+                if (line.startsWith('User:')) return `<span class="user-line">User:</span> ${line.substring(5)}`;
+                if (line.startsWith('Assistant:')) return `<span class="ai-line">Assistant:</span> ${line.substring(10)}`;
+                return line;
+            }).join('<br>');
+            document.getElementById('terminal').innerHTML = formatted;
+            document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
+        }
+
+        function reward() {
+            try {
+                let btn = document.getElementById('btn-reward');
+                if (btn) {
+                    btn.classList.add('flash-active');
+                    setTimeout(() => btn.classList.remove('flash-active'), 500);
+                }
+                trainOnHistory();
+            } catch (e) {
+                alert("Error in reward(): " + e.message);
+            }
+        }
+
+        function penalize(forcedCorrection = null) {
+            try {
+                let btn = document.getElementById('btn-penalize');
+                if (btn) {
+                    btn.classList.add('flash-active-red');
+                    setTimeout(() => btn.classList.remove('flash-active-red'), 500);
+                }
+
+                let correct = forcedCorrection;
+                if (correct === null) {
+                    correct = prompt('What should the response be?');
+                }
+                if (correct == null || correct.trim() === '') return;
+                // Remove the last Assistant response
+                let lastAssistantIndex = history.lastIndexOf('Assistant: ');
+                if (lastAssistantIndex !== -1) {
+                    history = history.slice(0, lastAssistantIndex);
+                }
+                history += 'Assistant: ' + correct + '\n';
+                updateTerminal();
+                trainOnHistory();
+            } catch (e) {
+                alert("Error in penalize(): " + e.message);
+            }
+        }
+
+        function trainOnHistory() {
+            let chars = history.split('');
+            if (chars.length < 2) return;
+            let inputs = [];
+            let targets = [];
+            for (let i = 0; i < chars.length - 1; i++) {
+                let c = chars[i];
+                let idx = charToIndex[c];
+                if (idx === undefined) continue;
+                let nextC = chars[i + 1];
+                let nextIdx = charToIndex[nextC];
+                if (nextIdx === undefined) continue;
+                inputs.push(fromArray(oneHot(idx, vocabSize)));
+                targets.push(fromArray(oneHot(nextIdx, vocabSize)));
+            }
+            if (inputs.length > 0) {
+                return rnn.train(inputs, targets);
+            }
+            return 0;
+        }
+
+        function updateLossUI(loss) {
+            lastLoss = loss;
+            document.getElementById('loss-display').innerText = loss.toFixed(4);
+            // Visual bar (clamped: 5.0 loss = empty bar, 0.0 loss = full bar)
+            let percent = Math.max(0, Math.min(100, (1 - (loss / 5)) * 100));
+            document.getElementById('loss-bar').style.width = percent + "%";
+            document.getElementById('loss-bar').style.backgroundColor = loss < 1.0 ? '#0f0' : (loss < 3.0 ? '#ff0' : '#f00');
+        }
+
+        async function trainEpochs() {
+            let btn = document.querySelector('button[onclick="trainEpochs()"]');
+            let originalText = btn.innerText;
+            btn.innerText = "Training...";
+
+            // Yield to UI
+            await new Promise(r => setTimeout(r, 10));
+
+            try {
+                let sumLoss = 0;
+                let currentLossVal = 0;
+                for (let i = 0; i < 10; i++) {
+                    currentLossVal = trainOnHistory();
+                    sumLoss += currentLossVal;
+
+                    // Update UI every 2 epochs
+                    if (i % 2 === 0) {
+                        updateLossUI(currentLossVal);
+                        await new Promise(r => setTimeout(r, 0));
+                    }
+                }
+                updateLossUI(currentLossVal); // Ensure final state is captured
+
+                let avg = (sumLoss / 10).toFixed(4);
+                let infoSpan = document.getElementById('loss-info');
+                infoSpan.innerText = "Avg Loss: " + avg;
+                infoSpan.style.color = '#00ffbc'; // Highlight change
+                setTimeout(() => {
+                    infoSpan.innerText = "Lower is Better";
+                    infoSpan.style.color = 'var(--text-muted)';
+                }, 3000);
+
+            } catch (e) {
+                alert("Error during training: " + e.message);
+            } finally {
+                btn.innerText = originalText;
+            }
+        }
+
+        function saveBrain() {
+            try {
+                let data = {
+                    history: history,
+                    lastLoss: lastLoss,
+                    rnn: {
+                        Wxh: rnn.Wxh,
+                        Whh: rnn.Whh,
+                        Why: rnn.Why,
+                        bh: rnn.bh,
+                        by: rnn.by
+                    }
+                };
+                let json = JSON.stringify(data);
+                let blob = new Blob([json], { type: "application/json" });
+                let url = URL.createObjectURL(blob);
+                let a = document.createElement('a');
+                a.href = url;
+                a.download = "neural_brain.json";
+                a.click();
+            } catch (e) {
+                alert("Error saving: " + e.message);
+            }
+        }
+
+        function loadBrain(input) {
+            let file = input.files[0];
+            if (!file) return;
+
+            let reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    let data = JSON.parse(e.target.result);
+                    history = data.history;
+                    lastLoss = data.lastLoss || 0.0; // Default to 0 if not found
+                    rnn.Wxh = data.rnn.Wxh;
+                    rnn.Whh = data.rnn.Whh;
+                    rnn.Why = data.rnn.Why;
+                    rnn.bh = data.rnn.bh;
+                    rnn.by = data.rnn.by;
+
+                    updateTerminal();
+                    updateLossUI(lastLoss);
+
+                    alert("Brain loaded successfully!");
+                } catch (err) {
+                    alert("Error loading brain: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+            input.value = ''; // reset so same file can be selected again
+        }
+
+        function resetBrain() {
+            if (!confirm("⚠️ Are you sure you want to RESET the brain? All memory will be lost.")) return;
+            rnn = new RNN(vocabSize, HIDDEN_SIZE, vocabSize);
+            history = '';
+            document.getElementById('terminal').innerHTML = '<div style="color: var(--text-muted); text-align: center; margin-top: 150px;">Brain Reset.<br>Neural Network Initialized.<br>Type a message to begin training...</div>';
+            document.getElementById('loss-display').innerText = '--.----';
+            document.getElementById('loss-bar').style.width = '0%';
+        }
+
+        function clearChat() {
+            history = '';
+            document.getElementById('terminal').innerHTML = '<div style="color: var(--text-muted); text-align: center; margin-top: 150px;">Chat Cleared.<br>Brain Memory Intact.<br>Ready for testing...</div>';
+        }
+
+        async function autoTrain() {
+            if (isAutoTraining) {
+                isAutoTraining = false;
+                document.getElementById('btn-auto').innerText = "🤖 Auto Train";
+                return;
+            }
+
+            let input = prompt("Enter training pairs.\nFormat: Trigger|Response\nSeparate pairs with newlines or semicolons (;).\n\nExample:\nHello|Hi there\nWho are you?|I am an AI");
+            if (!input) return;
+
+            // Parse Input
+            trainingQueue = [];
+            let rawPairs = input.split(/[\n;]+/);
+            for (let p of rawPairs) {
+                if (!p.includes('|')) continue;
+                let parts = p.split('|');
+                if (parts.length >= 2) {
+                    trainingQueue.push({
+                        trigger: parts[0].trim(),
+                        target: parts[1].trim()
+                    });
+                }
+            }
+
+            if (trainingQueue.length === 0) {
+                alert("No valid pairs found! Use format: Trigger|Response");
+                return;
+            }
+
+            // Reset State
+            currentPairIndex = 0;
+            consecutiveWins = 0;
+            autoLoopCount = 0;
+            rewardCount = 0;
+            penaltyCount = 0;
+            document.getElementById('reward-count').innerText = '0';
+            document.getElementById('penalty-count').innerText = '0';
+            document.getElementById('loop-count').innerText = '0';
+            document.getElementById('mastery-percent').innerText = '0';
+            document.getElementById('auto-score').style.display = 'block';
+            isAutoTraining = true;
+            document.getElementById('btn-auto').innerText = "⏹ Stop Auto";
+
+            // Allow UI to update
+            await new Promise(r => setTimeout(r, 100));
+            autoTrainLoop();
+        }
+
+        async function autoTrainLoop() {
+            if (!isAutoTraining) return;
+
+            let currentPair = trainingQueue[currentPairIndex];
+
+            // Optional: Update UI with status? 
+            // We can reuse the loss-info span or just log for now.
+
+            // 1. Send Message
+            document.getElementById('input').value = currentPair.trigger;
+            await send();
+
+            // 2. Wait for check
+            if (!isAutoTraining) return;
+            await new Promise(r => setTimeout(r, 1000));
+
+            // 3. Check Response
+            let lines = history.trim().split('\n');
+            let lastLine = lines[lines.length - 1];
+            let lastResponse = lastLine.replace('Assistant: ', '').trim();
+
+            if (lastResponse === currentPair.target) {
+                // Correct
+                consecutiveWins++;
+                rewardCount++;
+                document.getElementById('reward-count').innerText = rewardCount;
+
+                // Update Mastery %
+                let totalActions = rewardCount + penaltyCount;
+                let currentRatio = totalActions > 0 ? (rewardCount / totalActions) : 0;
+                document.getElementById('mastery-percent').innerText = (currentRatio * 100).toFixed(1);
+
+                reward();
+                // Light reinforcement only (no heavy training until auto-stop)
+
+                // Check Mastery
+                if (consecutiveWins >= 3) {
+                    consecutiveWins = 0;
+                    currentPairIndex = (currentPairIndex + 1) % trainingQueue.length;
+
+                    // If we wrapped back to 0, increment loop count
+                    if (currentPairIndex === 0) {
+                        autoLoopCount++;
+                        document.getElementById('loop-count').innerText = autoLoopCount;
+
+                        // Auto-stop check: 3+ loops AND 85%+ reward ratio
+                        let totalActions = rewardCount + penaltyCount;
+                        let rewardRatio = totalActions > 0 ? (rewardCount / totalActions) : 0;
+                        if (autoLoopCount >= 3 && rewardRatio >= 0.85) {
+                            // Final deep training before stopping
+                            let term = document.getElementById('terminal');
+                            term.innerHTML += `<div style="text-align:center; color: #ffcc00; margin: 10px;">⚡ Final Training Phase... ⚡</div>`;
+                            term.scrollTop = term.scrollHeight;
+                            await trainEpochs();
+
+                            isAutoTraining = false;
+                            document.getElementById('btn-auto').innerText = "🤖 Auto Train";
+                            term.innerHTML += `<div style="text-align:center; color: gold; margin: 15px; font-size: 1rem; font-weight: bold;">🏆 AUTO-TRAINING COMPLETE! 🏆<br>Reward Ratio: ${(rewardRatio * 100).toFixed(1)}%</div>`;
+                            term.scrollTop = term.scrollHeight;
+                            return; // Exit loop
+                        }
+                    }
+
+                    // Visual feedback
+                    let term = document.getElementById('terminal');
+                    term.innerHTML += `<div style="text-align:center; color: #00ffbc; margin: 10px; font-size: 0.8rem;">✨ MASTERY! Moving to pair ${currentPairIndex + 1}... ✨</div>`;
+                    term.scrollTop = term.scrollHeight;
+
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+            } else {
+                // Wrong
+                consecutiveWins = 0; // Reset streak
+                penaltyCount++;
+                document.getElementById('penalty-count').innerText = penaltyCount;
+
+                // Update Mastery %
+                let totalActions = rewardCount + penaltyCount;
+                let currentRatio = totalActions > 0 ? (rewardCount / totalActions) : 0;
+                document.getElementById('mastery-percent').innerText = (currentRatio * 100).toFixed(1);
+
+                penalize(currentPair.target);
+                // Light training (5 mini-epochs) so model can actually learn
+                let lastMiniLoss = 0;
+                for (let i = 0; i < 5; i++) {
+                    lastMiniLoss = trainOnHistory();
+                }
+                updateLossUI(lastMiniLoss); // Show the progress to the user
+            }
+
+            // 4. Wait
+            if (!isAutoTraining) return;
+            await new Promise(r => setTimeout(r, 1000));
+
+            // 5. Clear and Repeat
+            if (isAutoTraining) {
+                clearChat();
+                setTimeout(autoTrainLoop, 500);
+            }
+        }
+    </script>
+</body>
+
+</html>
