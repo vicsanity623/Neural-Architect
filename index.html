@@ -380,8 +380,8 @@
                     <button id="btn-reward" class="btn-success" onclick="reward()">Reward (Good)</button>
                     <button id="btn-penalize" class="btn-danger" onclick="penalize()">Penalize (Bad)</button>
                     <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 10px;"></div>
-                    <button class="btn-outline" onclick="trainEpochs()">⚡ Train (10 Epochs)</button>
-                    <button id="btn-auto" class="btn-outline" onclick="autoTrain()">🤖 Auto Train</button>
+                    <button class="btn-outline" onclick="trainEpochs()">⚡ Train (5 Epochs)</button>
+                    <button id="btn-auto" class="btn-outline" onclick="autoTrain()">🤖 Auto Teach</button>
                     <button class="btn-danger" style="margin-left: auto;" onclick="resetBrain()">Reset Brain</button>
                 </div>
 
@@ -393,7 +393,7 @@
                             <li><strong>Chat</strong>: Type a message and hit Send.</li>
                             <li><strong>Feedback</strong>: If the AI is wrong, click <strong>Penalize</strong> and enter
                                 the correction.</li>
-                            <li><strong>Cement</strong>: Click <strong>⚡ Train</strong> to run 10 deep epochs on that
+                            <li><strong>Cement</strong>: Click <strong>⚡ Train</strong> to run 5 light epochs on that
                                 correction.</li>
                         </ol>
 
@@ -859,6 +859,8 @@
             try {
                 let btn = document.getElementById('btn-penalize');
                 if (btn) {
+                    btn.classList.remove('flash-active-red'); // reset if already active
+                    void btn.offsetWidth; // trigger reflow
                     btn.classList.add('flash-active-red');
                     setTimeout(() => btn.classList.remove('flash-active-red'), 500);
                 }
@@ -1167,6 +1169,9 @@
 
                 // Use the CURRENT variant target for correction
                 penalize(currentPair.targets[currentVariantIndex]);
+
+                // Yield to UI to show red flash before heavy training
+                await new Promise(r => setTimeout(r, 100));
 
                 // Light training (5 mini-epochs)
                 let lastMiniLoss = 0;
