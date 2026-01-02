@@ -347,7 +347,7 @@
     <div class="dashboard">
         <header>
             <div>
-                <h1>Neural Architect <span class="badge">v1.1.5</span></h1>
+                <h1>Neural Architect <span class="badge">v1.1.6</span></h1>
             </div>
             <div>
                 <button class="btn-outline" onclick="clearChat()">🧹 Clear Chat</button>
@@ -448,6 +448,11 @@
                     <span style="color: gold;">Mastery: <span id="mastery-percent">0</span>%</span> |
                     <span style="color: var(--secondary);">Variant: <span id="variant-indicator">0/0</span></span> |
                     <span style="color: #ffcc00;">Active: <span id="curriculum-indicator">0/0</span></span>
+                </div>
+
+                <div id="tech-stats" style="margin-top: 10px; font-size: 0.75rem; color: var(--text-muted);">
+                    <span style="color: #00b8ff;">Total Parameters: <span id="param-count">360,000</span></span> |
+                    <span style="color: #ff66ff;">Grad Flow (GD): <span id="grad-norm">--.----</span></span>
                 </div>
             </div>
         </section>
@@ -624,6 +629,14 @@
                 this.Why = createRandomMatrix(this.outputSize, this.hiddenSize);
                 this.bh = createMatrix(this.hiddenSize, 1, 0);
                 this.by = createMatrix(this.outputSize, 1, 0);
+                this.lastGradNorm = 0;
+            }
+
+            getParameterCount() {
+                return (this.hiddenSize * this.inputSize) +
+                    (this.hiddenSize * this.hiddenSize) +
+                    (this.outputSize * this.hiddenSize) +
+                    this.hiddenSize + this.outputSize;
             }
 
             forward(inputs) {
@@ -705,6 +718,13 @@
                 this.Why = subtractMatrix(this.Why, scaleMatrix(this.learning_rate, grad_Why));
                 this.bh = subtractMatrix(this.bh, scaleMatrix(this.learning_rate, grad_bh));
                 this.by = subtractMatrix(this.by, scaleMatrix(this.learning_rate, grad_by));
+
+                // Analytics: Calculate Gradient Magnitude (L2 Norm)
+                let sumSq = 0;
+                [grad_Wxh, grad_Whh, grad_Why, grad_bh, grad_by].forEach(m => {
+                    m.forEach(row => row.forEach(v => sumSq += v * v));
+                });
+                this.lastGradNorm = Math.sqrt(sumSq);
 
                 return avgLoss;
             }
@@ -914,6 +934,10 @@
             let percent = Math.max(0, Math.min(100, (1 - (loss / 5)) * 100));
             document.getElementById('loss-bar').style.width = percent + "%";
             document.getElementById('loss-bar').style.backgroundColor = loss < 1.0 ? '#0f0' : (loss < 3.0 ? '#ff0' : '#f00');
+
+            // Technical Stats
+            document.getElementById('param-count').innerText = rnn.getParameterCount().toLocaleString();
+            document.getElementById('grad-norm').innerText = rnn.lastGradNorm.toFixed(6);
         }
 
         async function trainEpochs() {
@@ -1256,8 +1280,8 @@
             }
         }
 
-        // Register Service Worker
-        if ('serviceWorker' in navigator) {
+        // Register Service Worker (Skip if running from local file to avoid CORS errors)
+        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
                     .then(reg => console.log('SW Registered!', reg))
