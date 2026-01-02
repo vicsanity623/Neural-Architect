@@ -4,10 +4,10 @@ You can copy and paste the following list into the **Auto Train** prompt in the 
 
 Format: `Trigger|Response1,Response2`. Use this with **Auto Train** to teach Axiom basic interactions. Support for variants allows the AI to stay "creative" while still reaching mastery. (Customize this to your liking)
 
-Begin one at a time until mastery is reached, then move on to the next. **For example**, begin with the first pair `Hello|Hi there,Hi`. then add the second pair but keep the first pair. `Hello|Hi there,Hi;Who are you?|I am an assistant,I am an AI`. then add the third pair but keep the first two pairs. `Hello|Hi there,Hi;Who are you?|I am an assistant,I am an AI;What are you?|I am artificially intelligent,I am a neural network`. then save the model. repeat this process until mastery is reached.
+Begin one at a time until mastery is reached, then move on to the next. **For example**, begin with the first pair `Hello|Hi there,Hi`. then add the second pair but keep the first pair. `Hello|Hi there,Hi;Who are you?|I am an assistant,I am an AI`. then add the third pair but keep the first two pairs. `Hello|Hi there,Hi;Who are you?|I am an assistant,I am an AI;What are you?|I am artificially intelligent,I am a neural network`. repeat this process until mastery is reached. **Save the model** after each pair is added.
 
 
-**Do not attempt to use the full example list as this needs to be done one at a time in order for it to learn.**
+**This is a template only**
 ```
 Hello|Hi,Hi there,Hey
 Who are you?|I am an assistant,I am an AI,I am your digital assistant

@@ -347,7 +347,7 @@
     <div class="dashboard">
         <header>
             <div>
-                <h1>Neural Architect <span class="badge">v1.1.2</span></h1>
+                <h1>Neural Architect <span class="badge">v1.1.3</span></h1>
             </div>
             <div>
                 <button class="btn-outline" onclick="clearChat()">🧹 Clear Chat</button>
@@ -446,7 +446,8 @@
                     <span style="color: #ff3366;">✗ Penalties: <span id="penalty-count">0</span></span> |
                     <span>Loops: <span id="loop-count">0</span></span> |
                     <span style="color: gold;">Mastery: <span id="mastery-percent">0</span>%</span> |
-                    <span style="color: var(--secondary);">Variant: <span id="variant-indicator">0/0</span></span>
+                    <span style="color: var(--secondary);">Variant: <span id="variant-indicator">0/0</span></span> |
+                    <span style="color: #ffcc00;">Active: <span id="curriculum-indicator">0/0</span></span>
                 </div>
             </div>
         </section>
@@ -776,7 +777,9 @@
         let autoLoopCount = 0;
         let rewardCount = 0;
         let penaltyCount = 0;
-        let currentVariantIndex = 0; // Tracks which variant of the current pair is being taught
+        let currentVariantIndex = 0;
+        let isCurriculumMode = false;
+        let curriculumLimit = 1;
 
         // Functions
         async function send() {
@@ -1051,6 +1054,9 @@
                 return;
             }
 
+            isCurriculumMode = confirm("Enable Progressive Curriculum Mode?\n\n(AI will master one pair at a time, then expand to the next, auto-saving at each step.)");
+            curriculumLimit = isCurriculumMode ? 1 : trainingQueue.length;
+
             // Reset State
             currentPairIndex = 0;
             consecutiveWins = 0;
@@ -1062,6 +1068,7 @@
             document.getElementById('loop-count').innerText = '0';
             document.getElementById('mastery-percent').innerText = '0';
             document.getElementById('variant-indicator').innerText = '0/0';
+            document.getElementById('curriculum-indicator').innerText = curriculumLimit + '/' + trainingQueue.length;
             document.getElementById('auto-score').style.display = 'block';
             isAutoTraining = true;
             currentVariantIndex = 0;
@@ -1126,27 +1133,56 @@
                     } else {
                         // Move to next TRIGGER
                         currentVariantIndex = 0;
-                        currentPairIndex = (currentPairIndex + 1) % trainingQueue.length;
+
+                        // Cycle within the current curriculum limit
+                        let currentJobSize = isCurriculumMode ? curriculumLimit : trainingQueue.length;
+                        currentPairIndex = (currentPairIndex + 1) % currentJobSize;
+
+                        // UI Update
+                        document.getElementById('curriculum-indicator').innerText = curriculumLimit + '/' + trainingQueue.length;
 
                         // If we wrapped back to 0, increment loop count
                         if (currentPairIndex === 0) {
                             autoLoopCount++;
                             document.getElementById('loop-count').innerText = autoLoopCount;
 
-                            // Auto-stop check: 3+ loops AND 85%+ reward ratio
                             let totalActions = rewardCount + penaltyCount;
                             let rewardRatio = totalActions > 0 ? (rewardCount / totalActions) : 0;
-                            if (autoLoopCount >= 3 && rewardRatio >= 0.85) {
-                                // Final deep training before stopping
-                                term.innerHTML += `<div style="text-align:center; color: #ffcc00; margin: 10px;">⚡ Final Training Phase... ⚡</div>`;
-                                term.scrollTop = term.scrollHeight;
-                                await trainEpochs();
 
-                                isAutoTraining = false;
-                                document.getElementById('btn-auto').innerText = "🤖 Auto Train";
-                                term.innerHTML += `<div style="text-align:center; color: gold; margin: 15px; font-size: 1rem; font-weight: bold;">🏆 AUTO-TRAINING COMPLETE! 🏆<br>Reward Ratio: ${(rewardRatio * 100).toFixed(1)}%</div>`;
-                                term.scrollTop = term.scrollHeight;
-                                return; // Exit loop
+                            // Curriculum Expansion Check
+                            if (isCurriculumMode && curriculumLimit < trainingQueue.length) {
+                                // If mastered current subset (3+ loops and 85%+ accuracy)
+                                if (autoLoopCount >= 3 && rewardRatio >= 0.85) {
+                                    curriculumLimit++;
+                                    currentPairIndex = 0; // Force restart from the beginning to ensure old pairs aren't forgotten
+                                    term.innerHTML += `<div style="text-align:center; color: #ffcc00; margin: 15px; border: 1px dashed #ffcc00; border-radius: 4px; padding: 5px;">📈 CURRICULUM EXPANDED<br>Now teaching pairs 1 to ${curriculumLimit}!</div>`;
+                                    term.scrollTop = term.scrollHeight;
+
+                                    // Reset counters for the new set to prevent old low scores from weighing down progress
+                                    autoLoopCount = 0;
+                                    rewardCount = 0;
+                                    penaltyCount = 0;
+                                    document.getElementById('reward-count').innerText = '0';
+                                    document.getElementById('penalty-count').innerText = '0';
+                                    document.getElementById('loop-count').innerText = '0';
+
+                                    // Auto-save model
+                                    saveBrain();
+                                }
+                            } else {
+                                // Standard Auto-stop check
+                                if (autoLoopCount >= 3 && rewardRatio >= 0.85) {
+                                    // Final deep training before stopping
+                                    term.innerHTML += `<div style="text-align:center; color: #ffcc00; margin: 10px;">⚡ Final Training Phase... ⚡</div>`;
+                                    term.scrollTop = term.scrollHeight;
+                                    await trainEpochs();
+
+                                    isAutoTraining = false;
+                                    document.getElementById('btn-auto').innerText = "🤖 Auto Teach";
+                                    term.innerHTML += `<div style="text-align:center; color: gold; margin: 15px; font-size: 1rem; font-weight: bold;">🏆 AUTO-TRAINING COMPLETE! 🏆<br>Reward Ratio: ${(rewardRatio * 100).toFixed(1)}%</div>`;
+                                    term.scrollTop = term.scrollHeight;
+                                    return; // Exit loop
+                                }
                             }
                         }
 
