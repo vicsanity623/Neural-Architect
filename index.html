@@ -347,7 +347,7 @@
     <div class="dashboard">
         <header>
             <div>
-                <h1>Neural Architect <span class="badge">v1.1</span></h1>
+                <h1>Neural Architect <span class="badge">v1.1.2</span></h1>
             </div>
             <div>
                 <button class="btn-outline" onclick="clearChat()">🧹 Clear Chat</button>
@@ -387,20 +387,51 @@
 
                 <details>
                     <summary><strong>📚 How to Teach (Guide)</strong></summary>
-                    <p>
-                        1. <strong>Chat</strong>: Type "Hello" and hit Send.<br>
-                        2. <strong>Feedback</strong>: If the reply is gibberish, click <strong>Penalize</strong> and
-                        enter the correct reply (e.g., "Hi there").<br>
-                        3. <strong>Cement</strong>: Click <strong>⚡ Train</strong> immediately. This runs 10 rapid
-                        training loops on the corrected history.<br>
-                        4. <strong>Observe</strong>: Watch the 'Loss Value' drop. Aim for &lt; 1.0 for reliable
-                        responses.
-                    </p>
+                    <div style="background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 6px; margin-top: 10px;">
+                        <h4 style="margin: 0 0 10px 0; color: var(--secondary); font-size: 0.9rem;">Manual Training</h4>
+                        <ol style="margin: 0 0 15px 0; padding-left: 20px; line-height: 1.6; font-size: 0.85rem;">
+                            <li><strong>Chat</strong>: Type a message and hit Send.</li>
+                            <li><strong>Feedback</strong>: If the AI is wrong, click <strong>Penalize</strong> and enter
+                                the correction.</li>
+                            <li><strong>Cement</strong>: Click <strong>⚡ Train</strong> to run 10 deep epochs on that
+                                correction.</li>
+                        </ol>
+
+                        <h4 style="margin: 0 0 10px 0; color: var(--secondary); font-size: 0.9rem;">🤖 Auto Training
+                            (Bulk Learning)</h4>
+                        <ol style="margin: 0; padding-left: 20px; line-height: 1.6; font-size: 0.85rem;">
+                            <li><strong>Prepare</strong>: Click <strong>Auto Train</strong> and paste pairs as
+                                <code>Trigger|Response</code>.
+                            </li>
+                            <li><strong>Variations</strong>: Support multi-answers (e.g.
+                                <code>Hello|Hi,Hi there</code>).
+                            </li>
+                            <li><strong>Monitor</strong>: The AI self-corrects through the list until it hits "Mastery".
+                            </li>
+                            <li><strong>Success</strong>: Reaching 85% accuracy over 3 loops triggers a final
+                                optimization phase.</li>
+                        </ol>
+                        <p
+                            style="margin-top: 15px; font-size: 0.8rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
+                            <strong>Tip</strong>: Aim for a Loss Value &lt; 1.0 for reliable, human-like responses.
+                        </p>
+                    </div>
                 </details>
             </div>
 
             <!-- Stats Panel -->
             <div class="panel stats-panel">
+                <div
+                    style="margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">
+                    <span class="metric-label">Creativity (Temperature)</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="range" id="temp-slider" min="0.1" max="2.0" step="0.1" value="0.7"
+                            style="flex: 1; accent-color: var(--secondary);"
+                            oninput="document.getElementById('temp-val').innerText = this.value">
+                        <span id="temp-val" class="metric-value" style="font-size: 1rem; width: 30px;">0.7</span>
+                    </div>
+                </div>
+
                 <span class="metric-label">Current Loss Value (Confusion Assessment)</span>
                 <div style="display: flex; justify-content: space-between; align-items: baseline;">
                     <span class="metric-value" id="loss-display">--.----</span>
@@ -414,7 +445,8 @@
                     <span style="color: #00ffbc;">✓ Rewards: <span id="reward-count">0</span></span> |
                     <span style="color: #ff3366;">✗ Penalties: <span id="penalty-count">0</span></span> |
                     <span>Loops: <span id="loop-count">0</span></span> |
-                    <span style="color: gold;">Mastery: <span id="mastery-percent">0</span>%</span>
+                    <span style="color: gold;">Mastery: <span id="mastery-percent">0</span>%</span> |
+                    <span style="color: var(--secondary);">Variant: <span id="variant-indicator">0/0</span></span>
                 </div>
             </div>
         </section>
@@ -442,10 +474,12 @@
 
         function createRandomMatrix(rows, cols) {
             let m = new Array(rows);
+            // Xavier/Glorot Initialization: prevents signals from exploding or vanishing in larger networks
+            let scale = Math.sqrt(1 / cols);
             for (let i = 0; i < rows; i++) {
                 m[i] = new Array(cols);
                 for (let j = 0; j < cols; j++) {
-                    m[i][j] = Math.random() * 0.2 - 0.1;
+                    m[i][j] = (Math.random() * 2 - 1) * scale;
                 }
             }
             return m;
@@ -582,7 +616,7 @@
                 this.inputSize = inputSize;
                 this.hiddenSize = hiddenSize;
                 this.outputSize = outputSize;
-                this.learning_rate = 0.01; // Tuned for stability with larger brain
+                this.learning_rate = 0.005; // Lowered for stability with 512 hidden units
 
                 this.Wxh = createRandomMatrix(this.hiddenSize, this.inputSize);
                 this.Whh = createRandomMatrix(this.hiddenSize, this.hiddenSize);
@@ -675,6 +709,7 @@
             }
 
             generate(prefix, maxLen) {
+                let temp = parseFloat(document.getElementById('temp-slider').value) || 0.7;
                 let chars = prefix.split('');
                 let inputs = chars.map(c => {
                     let idx = charToIndex[c];
@@ -682,7 +717,7 @@
                     return fromArray(oneHot(idx, this.inputSize));
                 });
 
-                // Run forward pass on the prefix to get the final hidden state
+                // Run forward pass on the prefix
                 let h = createMatrix(this.hiddenSize, 1, 0);
                 for (let t = 0; t < inputs.length; t++) {
                     let x = inputs[t];
@@ -692,32 +727,29 @@
                     h = mapMatrix(h, Math.tanh);
                 }
 
-                // Start generating
                 let response = '';
-
-                // We start predicting IMMEDIATELY from the 'h' state left by the prefix.
-                // We do NOT inject a dummy character significantly.
-                // The loop structure: Predict -> Append -> Update State with Prediction
-
                 for (let i = 0; i < maxLen; i++) {
-                    // 1. Predict next char from CURRENT state (h)
                     let o = addMatrix(matmul(this.Why, h), this.by);
-                    let probs = softmax(o);
-                    let probArray = toArray(probs);
-                    let nextIdx = argmax(probArray);
+
+                    // Apply Temperature
+                    let logits = toArray(o).map(v => v / temp);
+                    let maxLogit = Math.max(...logits);
+                    let exps = logits.map(v => Math.exp(v - maxLogit));
+                    let sum = exps.reduce((a, b) => a + b, 0);
+                    let probs = exps.map(v => v / sum);
+
+                    let nextIdx = sample(probs);
                     let currentChar = indexToChar[nextIdx] || '?';
 
-                    if (currentChar === '\n') break; // Allow stopping
+                    if (currentChar === '\n') break;
                     response += currentChar;
 
-                    // 2. Feed this predicted char as input for the NEXT step
                     let x = fromArray(oneHot(nextIdx, this.inputSize));
                     let mul1 = matmul(this.Wxh, x);
                     let mul2 = matmul(this.Whh, h);
                     h = addMatrix(addMatrix(mul1, mul2), this.bh);
                     h = mapMatrix(h, Math.tanh);
                 }
-
                 return response.trim();
             }
         }
@@ -731,7 +763,7 @@
         const indexToChar = chars;
 
         // Initialize RNN
-        const HIDDEN_SIZE = 256; // Upgraded for 12-core CPU
+        const HIDDEN_SIZE = 512; // Upgraded for 12-core CPU
         let rnn = new RNN(vocabSize, HIDDEN_SIZE, vocabSize);
 
         // History
@@ -744,6 +776,7 @@
         let autoLoopCount = 0;
         let rewardCount = 0;
         let penaltyCount = 0;
+        let currentVariantIndex = 0; // Tracks which variant of the current pair is being taught
 
         // Functions
         async function send() {
@@ -1001,9 +1034,12 @@
                 if (!p.includes('|')) continue;
                 let parts = p.split('|');
                 if (parts.length >= 2) {
+                    // Support comma-separated variant targets
+                    let targetString = parts[1].trim();
+                    let variants = targetString.split(',').map(v => v.trim()).filter(v => v !== '');
                     trainingQueue.push({
                         trigger: parts[0].trim(),
-                        target: parts[1].trim()
+                        targets: variants // array of valid targets
                     });
                 }
             }
@@ -1023,8 +1059,10 @@
             document.getElementById('penalty-count').innerText = '0';
             document.getElementById('loop-count').innerText = '0';
             document.getElementById('mastery-percent').innerText = '0';
+            document.getElementById('variant-indicator').innerText = '0/0';
             document.getElementById('auto-score').style.display = 'block';
             isAutoTraining = true;
+            currentVariantIndex = 0;
             document.getElementById('btn-auto').innerText = "⏹ Stop Auto";
 
             // Allow UI to update
@@ -1053,8 +1091,14 @@
             let lastLine = lines[lines.length - 1];
             let lastResponse = lastLine.replace('Assistant: ', '').trim();
 
-            if (lastResponse === currentPair.target) {
-                // Correct
+            let isCorrectAny = currentPair.targets.some(t => lastResponse === t);
+            let isTargetCorrect = (lastResponse === currentPair.targets[currentVariantIndex]);
+
+            // Update Variant UI
+            document.getElementById('variant-indicator').innerText = (currentVariantIndex + 1) + '/' + currentPair.targets.length;
+
+            if (isCorrectAny && isTargetCorrect) {
+                // Perfect Match for current curriculum
                 consecutiveWins++;
                 rewardCount++;
                 document.getElementById('reward-count').innerText = rewardCount;
@@ -1065,46 +1109,54 @@
                 document.getElementById('mastery-percent').innerText = (currentRatio * 100).toFixed(1);
 
                 reward();
-                // Light reinforcement only (no heavy training until auto-stop)
 
-                // Check Mastery
-                if (consecutiveWins >= 3) {
+                // Check Rotation (6 wins to master a specific variant)
+                if (consecutiveWins >= 6) {
                     consecutiveWins = 0;
-                    currentPairIndex = (currentPairIndex + 1) % trainingQueue.length;
+                    currentVariantIndex++;
 
-                    // If we wrapped back to 0, increment loop count
-                    if (currentPairIndex === 0) {
-                        autoLoopCount++;
-                        document.getElementById('loop-count').innerText = autoLoopCount;
-
-                        // Auto-stop check: 3+ loops AND 85%+ reward ratio
-                        let totalActions = rewardCount + penaltyCount;
-                        let rewardRatio = totalActions > 0 ? (rewardCount / totalActions) : 0;
-                        if (autoLoopCount >= 3 && rewardRatio >= 0.85) {
-                            // Final deep training before stopping
-                            let term = document.getElementById('terminal');
-                            term.innerHTML += `<div style="text-align:center; color: #ffcc00; margin: 10px;">⚡ Final Training Phase... ⚡</div>`;
-                            term.scrollTop = term.scrollHeight;
-                            await trainEpochs();
-
-                            isAutoTraining = false;
-                            document.getElementById('btn-auto').innerText = "🤖 Auto Train";
-                            term.innerHTML += `<div style="text-align:center; color: gold; margin: 15px; font-size: 1rem; font-weight: bold;">🏆 AUTO-TRAINING COMPLETE! 🏆<br>Reward Ratio: ${(rewardRatio * 100).toFixed(1)}%</div>`;
-                            term.scrollTop = term.scrollHeight;
-                            return; // Exit loop
-                        }
-                    }
-
-                    // Visual feedback
                     let term = document.getElementById('terminal');
-                    term.innerHTML += `<div style="text-align:center; color: #00ffbc; margin: 10px; font-size: 0.8rem;">✨ MASTERY! Moving to pair ${currentPairIndex + 1}... ✨</div>`;
-                    term.scrollTop = term.scrollHeight;
+                    if (currentVariantIndex < currentPair.targets.length) {
+                        // Move to next VARIANT of same trigger
+                        term.innerHTML += `<div style="text-align:center; color: #00b8ff; margin: 10px; font-size: 0.8rem;">🔄 Variant Mastered! Moving to variant ${currentVariantIndex + 1}... 🔄</div>`;
+                        term.scrollTop = term.scrollHeight;
+                        await new Promise(r => setTimeout(r, 1000));
+                    } else {
+                        // Move to next TRIGGER
+                        currentVariantIndex = 0;
+                        currentPairIndex = (currentPairIndex + 1) % trainingQueue.length;
 
-                    await new Promise(r => setTimeout(r, 1000));
+                        // If we wrapped back to 0, increment loop count
+                        if (currentPairIndex === 0) {
+                            autoLoopCount++;
+                            document.getElementById('loop-count').innerText = autoLoopCount;
+
+                            // Auto-stop check: 3+ loops AND 85%+ reward ratio
+                            let totalActions = rewardCount + penaltyCount;
+                            let rewardRatio = totalActions > 0 ? (rewardCount / totalActions) : 0;
+                            if (autoLoopCount >= 3 && rewardRatio >= 0.85) {
+                                // Final deep training before stopping
+                                term.innerHTML += `<div style="text-align:center; color: #ffcc00; margin: 10px;">⚡ Final Training Phase... ⚡</div>`;
+                                term.scrollTop = term.scrollHeight;
+                                await trainEpochs();
+
+                                isAutoTraining = false;
+                                document.getElementById('btn-auto').innerText = "🤖 Auto Train";
+                                term.innerHTML += `<div style="text-align:center; color: gold; margin: 15px; font-size: 1rem; font-weight: bold;">🏆 AUTO-TRAINING COMPLETE! 🏆<br>Reward Ratio: ${(rewardRatio * 100).toFixed(1)}%</div>`;
+                                term.scrollTop = term.scrollHeight;
+                                return; // Exit loop
+                            }
+                        }
+
+                        // Visual feedback for moving to next pair
+                        term.innerHTML += `<div style="text-align:center; color: #00ffbc; margin: 10px; font-size: 0.8rem;">✨ TRIGGER MASTERED! Moving to next prompt... ✨</div>`;
+                        term.scrollTop = term.scrollHeight;
+                        await new Promise(r => setTimeout(r, 1000));
+                    }
                 }
             } else {
-                // Wrong
-                consecutiveWins = 0; // Reset streak
+                // Wrong or wrong variant
+                consecutiveWins = 0;
                 penaltyCount++;
                 document.getElementById('penalty-count').innerText = penaltyCount;
 
@@ -1113,13 +1165,15 @@
                 let currentRatio = totalActions > 0 ? (rewardCount / totalActions) : 0;
                 document.getElementById('mastery-percent').innerText = (currentRatio * 100).toFixed(1);
 
-                penalize(currentPair.target);
-                // Light training (5 mini-epochs) so model can actually learn
+                // Use the CURRENT variant target for correction
+                penalize(currentPair.targets[currentVariantIndex]);
+
+                // Light training (5 mini-epochs)
                 let lastMiniLoss = 0;
                 for (let i = 0; i < 5; i++) {
                     lastMiniLoss = trainOnHistory();
                 }
-                updateLossUI(lastMiniLoss); // Show the progress to the user
+                updateLossUI(lastMiniLoss);
             }
 
             // 4. Wait
