@@ -347,7 +347,7 @@
     <div class="dashboard">
         <header>
             <div>
-                <h1>Neural Architect <span class="badge">v1.1.6</span></h1>
+                <h1>Neural Architect <span class="badge">v1.1.8</span></h1>
             </div>
             <div>
                 <button class="btn-outline" onclick="clearChat()">🧹 Clear Chat</button>
@@ -622,7 +622,7 @@
                 this.inputSize = inputSize;
                 this.hiddenSize = hiddenSize;
                 this.outputSize = outputSize;
-                this.learning_rate = 0.005; // Lowered for stability with 512 hidden units
+                this.learning_rate = 0.002; // Reduced for 1024 hidden unit stability
 
                 this.Wxh = createRandomMatrix(this.hiddenSize, this.inputSize);
                 this.Whh = createRandomMatrix(this.hiddenSize, this.hiddenSize);
@@ -784,7 +784,7 @@
         const indexToChar = chars;
 
         // Initialize RNN
-        const HIDDEN_SIZE = 512; // Upgraded for 12-core CPU
+        const HIDDEN_SIZE = 1024; // Architectural Upgrade: 1.2M Params
         let rnn = new RNN(vocabSize, HIDDEN_SIZE, vocabSize);
 
         // History
@@ -865,20 +865,24 @@
             document.getElementById('terminal').scrollTop = document.getElementById('terminal').scrollHeight;
         }
 
-        function reward() {
+        async function reward() {
             try {
                 let btn = document.getElementById('btn-reward');
                 if (btn) {
+                    btn.classList.remove('flash-active'); // reset if already active
+                    void btn.offsetWidth; // trigger reflow
                     btn.classList.add('flash-active');
                     setTimeout(() => btn.classList.remove('flash-active'), 500);
                 }
+                // Yield to ensure animation starts before heavy training
+                await new Promise(r => setTimeout(r, 100));
                 trainOnHistory();
             } catch (e) {
                 alert("Error in reward(): " + e.message);
             }
         }
 
-        function penalize(forcedCorrection = null) {
+        async function penalize(forcedCorrection = null) {
             try {
                 let btn = document.getElementById('btn-penalize');
                 if (btn) {
@@ -887,6 +891,9 @@
                     btn.classList.add('flash-active-red');
                     setTimeout(() => btn.classList.remove('flash-active-red'), 500);
                 }
+
+                // Yield to ensure animation starts
+                await new Promise(r => setTimeout(r, 100));
 
                 let correct = forcedCorrection;
                 if (correct === null) {
@@ -1141,10 +1148,12 @@
                 let currentRatio = totalActions > 0 ? (rewardCount / totalActions) : 0;
                 document.getElementById('mastery-percent').innerText = (currentRatio * 100).toFixed(1);
 
-                reward();
+                await reward();
+                // Yield to UI to show green flash
+                await new Promise(r => setTimeout(r, 150));
 
                 // Check Rotation (6 wins to master a specific variant)
-                if (consecutiveWins >= 6) {
+                if (consecutiveWins >= 3) {
                     consecutiveWins = 0;
                     currentVariantIndex++;
 
@@ -1227,7 +1236,9 @@
                 let currentRatio = totalActions > 0 ? (rewardCount / totalActions) : 0;
                 document.getElementById('mastery-percent').innerText = (currentRatio * 100).toFixed(1);
 
-                reward();
+                await reward();
+                // Yield to UI to show green flash
+                await new Promise(r => setTimeout(r, 150));
 
                 let term = document.getElementById('terminal');
                 term.innerHTML += `<div style="text-align:center; color: #ffcc00; margin: 10px; font-size: 0.8rem; font-style: italic;">💡 Soft Match! Nudging weights towards target variant... 💡</div>`;
@@ -1256,10 +1267,10 @@
                 document.getElementById('mastery-percent').innerText = (currentRatio * 100).toFixed(1);
 
                 // Use the CURRENT variant target for correction
-                penalize(currentPair.targets[currentVariantIndex]);
+                await penalize(currentPair.targets[currentVariantIndex]);
 
                 // Yield to UI to show red flash before heavy training
-                await new Promise(r => setTimeout(r, 100));
+                await new Promise(r => setTimeout(r, 150));
 
                 // Light training (5 mini-epochs)
                 let lastMiniLoss = 0;

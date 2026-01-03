@@ -1,4 +1,4 @@
-const CACHE_NAME = 'neural-architect-v1.1.6';
+const CACHE_NAME = 'neural-architect-v1.1.8';
 const ASSETS = [
   './',
   './index.html',
