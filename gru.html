@@ -1433,35 +1433,92 @@
                 targetsNorm = currentPair.targets.map(t => clear(t));
             }
 
-            let isCorrect = targetsNorm.includes(normResp);
+            let isStrictCorrect = targetsNorm[currentVariantIndex] === normResp;
+            let isCorrectAny = targetsNorm.includes(normResp);
 
             document.getElementById('variant-indicator').innerText = (currentVariantIndex + 1) + '/' + currentPair.targets.length;
             document.getElementById('curriculum-indicator').innerText = curriculumLimit + '/' + trainingQueue.length;
 
-            if (isCorrect) {
+            if (isStrictCorrect) {
                 consecutiveWins++;
                 rewardCount++;
                 document.getElementById('reward-count').innerText = rewardCount;
                 await reward();
 
+                // Yield to UI
+                await new Promise(r => setTimeout(r, 150));
+
                 if (consecutiveWins >= 3) {
                     consecutiveWins = 0;
-                    currentPairIndex = (currentPairIndex + 1) % curriculumLimit;
+                    currentVariantIndex++;
 
-                    if (currentPairIndex === 0) {
-                        autoLoopCount++;
-                        document.getElementById('loop-count').innerText = autoLoopCount;
-                        if (isCurriculumMode && curriculumLimit < trainingQueue.length && autoLoopCount > 1) {
-                            curriculumLimit++;
-                            autoLoopCount = 0;
+                    let term = document.getElementById('terminal');
+                    if (currentVariantIndex < currentPair.targets.length) {
+                        // Move to next VARIANT of same trigger
+                        term.innerHTML += `<div style="text-align:center; color: #00b8ff; margin: 10px; font-size: 0.8rem;">🔄 Variant Mastered! Moving to variant ${currentVariantIndex + 1}... 🔄</div>`;
+                        term.scrollTop = term.scrollHeight;
+                        await new Promise(r => setTimeout(r, 500));
+                    } else {
+                        // Move to next TRIGGER
+                        currentVariantIndex = 0;
+                        currentPairIndex = (currentPairIndex + 1) % curriculumLimit;
+
+                        // Curriculum Expansion Check
+                        if (isCurriculumMode && curriculumLimit < trainingQueue.length) {
+                            let totalActions = rewardCount + penaltyCount;
+                            let rewardRatio = totalActions > 0 ? (rewardCount / totalActions) : 0;
+                            if (autoLoopCount >= 2 && rewardRatio >= 0.85) {
+                                curriculumLimit++;
+                                currentPairIndex = 0; // Restart to reinforce
+                                term.innerHTML += `<div style="text-align:center; color: #ffcc00; margin: 15px; border: 1px dashed #ffcc00; border-radius: 4px; padding: 5px;">📈 CURRICULUM EXPANDED<br>Now teaching pairs 1 to ${curriculumLimit}!</div>`;
+                                autoLoopCount = 0;
+                            }
                         }
+
+                        if (currentPairIndex === 0) {
+                            autoLoopCount++;
+                            document.getElementById('loop-count').innerText = autoLoopCount;
+                        }
+
+                        term.innerHTML += `<div style="text-align:center; color: #00ffbc; margin: 10px; font-size: 0.8rem;">✨ TRIGGER MASTERED! Moving to next prompt... ✨</div>`;
+                        term.scrollTop = term.scrollHeight;
+                        await new Promise(r => setTimeout(r, 500));
                     }
+                }
+            } else if (isCorrectAny) {
+                // Soft Match: Nudge weights towards target variant
+                rewardCount++;
+                document.getElementById('reward-count').innerText = rewardCount;
+                await reward();
+
+                let term = document.getElementById('terminal');
+                term.innerHTML += `<div style="text-align:center; color: #ffcc00; margin: 10px; font-size: 0.8rem; font-style: italic;">💡 Soft Match! Nudging towards target variant... 💡</div>`;
+                term.scrollTop = term.scrollHeight;
+
+                // NUDGE: Correct history tokens to the target variant and train
+                // 1. Pop the "close" response tokens
+                for (let i = 0; i < lastResponseTokenCount; i++) {
+                    historyTokens.pop();
+                }
+                // 2. Push target tokens
+                let targetTokens = tokenize(currentPair.targets[currentVariantIndex]);
+                targetTokens.forEach(w => historyTokens.push(getIndex(w)));
+
+                // 3. Light training (3 mini-epochs)
+                for (let i = 0; i < 3; i++) {
+                    trainOnHistory(1.0);
                 }
             } else {
                 consecutiveWins = 0;
                 penaltyCount++;
                 document.getElementById('penalty-count').innerText = penaltyCount;
-                await penalize(currentPair.targets[0]);
+                // Correct towards the CURRENT variant
+                await penalize(currentPair.targets[currentVariantIndex]);
+
+                // Light training (5 mini-epochs)
+                for (let i = 0; i < 5; i++) {
+                    trainOnHistory(1.5);
+                }
             }
 
             let total = rewardCount + penaltyCount;
