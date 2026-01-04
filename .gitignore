@@ -1,4 +1,26 @@
+# OS files
 .DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+ENV/
+env/
 .env
-__pycache__
-*.txt
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+neural_brain.json
+neural_brain.onnx
+brain_training.txt
+node_modules/

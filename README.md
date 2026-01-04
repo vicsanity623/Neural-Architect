@@ -1,30 +1,33 @@
-# 🧠 Neural Architect v1.1.3
+# 🧠 Neural Architect v2.0 (GRU Edition)
 
-Neural Architect is a high-performance, browser-based Neural Network Assistant and Research Sandbox. It features a custom-built **Recurrent Neural Network (RNN)** engine implemented entirely from scratch in pure JavaScript. This project demonstrates the power of modern web technologies by handling complex matrix mathematics, backpropagation through time (BPTT), and real-time training directly on the client side without any server-side dependencies.
+Neural Architect is a high-performance, browser-based Neural Network Assistant and Research Sandbox. It features a custom-built **Gated Recurrent Unit (GRU)** engine implemented entirely from scratch in pure JavaScript. This project demonstrates the power of modern web technologies by handling complex matrix mathematics, vector embeddings, and backpropagation through time (BPTT) directly on the client side without any server-side dependencies.
 
 ---
 
 ## 🚀 Vision
 
-The goal of Neural Architect is to provide a transparent, accessible, and interactive platform for studying neural dynamics. By moving the "brain" into the browser, we eliminate the black-box nature of remote AI, allowing users to shape, monitor, and master their own local intelligence agents.
+The goal of Neural Architect is to provide a transparent, accessible, and interactive platform for studying neural dynamics. By moving the "brain" into the browser, we eliminate the black-box nature of remote AI. Version 2.0 represents a massive leap forward, moving from character-level spelling to word-level conceptual understanding.
 
 ## ✨ Core Features
 
-### 🧮 Custom 512-Unit RNN Engine
-- **Architecture**: A deep character-level RNN with 512 hidden units.
-- **Initialization**: Optimized with **Xavier/Glorot Initialization** to ensure stable signal propagation and prevent `tanh` saturation in larger layers.
-- **Zero Dependencies**: Built with vanilla ES6+ JavaScript. No TensorFlow, PyTorch, or NumPy.
-- **Precision Control**: Adjustable **Creativity (Temperature)** sampling allows for deterministic (Low Temp) vs. expressive (High Temp) output generations.
+### 🧩 Word-Level GRU Engine
+- **Architecture**: A Gated Recurrent Unit (GRU) with specialized Update and Reset gates. This solves the **Vanishing Gradient Problem**, allowing the AI to remember context from much earlier in the conversation compared to standard RNNs.
+- **Concept Embeddings**: Includes a learnable **Embedding Layer** (32-dim). The AI converts words into dense vectors, allowing it to learn semantic relationships (e.g., understanding that "Hi" and "Hello" are mathematically similar).
+- **No More Spelling**: Unlike character-level models, v2.0 sees whole words. It grasps concepts immediately without needing to learn how to spell "h-e-l-l-o" first.
+
+### ⚡ Zero Dependencies
+- **Pure JavaScript**: Built with vanilla ES6+. No TensorFlow, PyTorch, NumPy, or Python required.
+- **Dynamic Vocabulary**: The model builds its dictionary on the fly. As you type new words, the matrix dynamically expands to accommodate them.
 
 ### 🤖 Advanced Training Systems
-- **Progressive Curriculum Learning**: Automates the "step-up" training method. The AI masters one pair at a time, cumulative restarts ensure long-term memory retention before expanding the dataset.
-- **Rotational Multi-Target Mastery**: Support for multiple valid responses (synonyms). The AI rotates its focus across variants until every response meets the 6-streak mastery threshold.
+- **Progressive Curriculum Learning**: Automates the "step-up" training method. The AI masters one pair at a time, with cumulative restarts to ensure long-term memory retention before expanding the dataset.
+- **Rotational Multi-Target Mastery**: Support for multiple valid responses (synonyms). The AI rotates its focus across variants until every response meets the mastery threshold.
 - **Manual Feedback Loop**: Real-time "Reward" and "Penalize" system allows for surgical correction of the model's weights during live conversation.
 
-### � Live Analytics Dashboard
-- **Loss Value (Confusion Assessment)**: Real-time tracking of the model's objective function performance.
-- **Mastery Tracking**: Visual representation of the model's accuracy and consistency across the training set.
-- **Training Loops**: Automated loop counting to track dataset exposure over time.
+### 📊 Live Analytics Dashboard
+- **Loss Value**: Real-time tracking of the model's error rate.
+- **Mastery Tracking**: Visual representation of the model's accuracy and consistency.
+- **Vocab & Params**: Live counters for the size of the neural brain.
 
 ---
 
@@ -32,28 +35,29 @@ The goal of Neural Architect is to provide a transparent, accessible, and intera
 
 | Component | Detail |
 | :--- | :--- |
-| **Model Type** | Character-level Recurrent Neural Network (RNN) |
-| **Activation** | Hyperbolic Tangent (tanh) |
-| **Optimization** | RMSprop-inspired Gradient Descent |
-| **Weight Init** | Xavier/Glorot Normalization |
-| **Hidden Layers** | 512 Units |
-| **Input/Output** | One-Hot Encoded Characters |
-| **Persistence** | JSON-based Weight Export/Import |
+| **Model Type** | Word-Level Gated Recurrent Unit (GRU) |
+| **Gating** | Update (z) & Reset (r) Gates |
+| **Activation** | Sigmoid (Gates) & Tanh (Candidate) |
+| **Hidden State** | 128 Units |
+| **Embedding Size** | 32 Dimensions |
+| **Input/Output** | Tokenized Word Vectors |
+| **Persistence** | JSON-based Weight & Vocab Export |
 
 ## 📚 Training Methodologies
 
 ### 1. Manual Tutoring
-Engage in direct conversation. When the AI fails, provide a correction. The **⚡ Train (5 Epochs)** button performs deep reinforced learning on that specific correction history to cement the new knowledge.
+Engage in direct conversation. When the AI fails, click **Penalize**. The system will mathematically adjust the vector embedding of the incorrect word away from the context and pull the correct word closer.
 
 ### 2. Auto-Teach (Bulk Learning)
-Input massive datasets in the `Trigger|Response` format. Support for synonyms like `Hello|Hi,Hey,Greetings` allows for more human-like response variability.
+Input massive datasets in the `Trigger|Response` format.
+*   **Example**: `Who are you?|I am Neural Architect,I am an AI`
+*   The system uses the GRU's short-term memory to learn the sequence of words required to generate these specific phrases.
 
 ### 3. Progressive Curriculum (Recommended)
 Enable **Curriculum Mode** during Auto-Teach. The system will:
 1. Drill the first pair to mastery.
 2. Automatically expand the set.
-3. **Restart from the beginning** to ensure the AI hasn't forgotten earlier pairs.
-4. Auto-save the model at every milestone.
+3. **Restart from the beginning** to ensure the AI utilizes the GRU's memory capacity to retain old pairs while learning new ones.
 
 ---
 
@@ -70,7 +74,7 @@ Enable **Curriculum Mode** during Auto-Teach. The system will:
 
 ---
 
-## � License
+## 📄 License
 
 Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
 

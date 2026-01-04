@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0a0f">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/icon-192.png">
+    <title>Neural Assistant Builder</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0f;
+            --panel-bg: rgba(20, 20, 30, 0.8);
+            --params-bg: rgba(0, 0, 0, 0.5);
+            --primary: #00ffbc;
+            --secondary: #00b8ff;
+            --danger: #ff3366;
+            --warning: #ffcc00;
+            --text-main: #e0e0e0;
+            --text-muted: #888;
+            --font-mono: 'Menlo', 'Consolas', 'Courier New', monospace;
+            --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --radius: 12px;
+            --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            margin: 0;
+            padding: 20px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-image: radial-gradient(circle at 50% 10%, #1a1a2e 0%, #000 100%);
+        }
+
+        .dashboard {
+            max-width: 1200px;
+            width: 100%;
+            height: 100%;
+            margin: 0 auto;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+
+        .badge {
+            background: rgba(0, 255, 188, 0.1);
+            color: var(--primary);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        .terminal-container {
+            background: var(--panel-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        #terminal {
+            flex: 1;
+            padding: 20px;
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            overflow-y: auto;
+            color: #d0d0d0;
+            white-space: pre-wrap;
+        }
+
+        .user-line {
+            color: var(--secondary);
+            font-weight: bold;
+        }
+
+        .ai-line {
+            color: var(--primary);
+        }
+
+        .input-area {
+            display: flex;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            gap: 10px;
+        }
+
+        #input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        #input:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 10px rgba(0, 184, 255, 0.2);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: var(--shadow);
+        }
+
+        .stats-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .btn-group.bottom {
+            margin-bottom: 0;
+        }
+
+        button {
+            padding: 10px 18px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: var(--secondary);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            background: #33c7ff;
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--primary);
+            color: #000;
+        }
+
+        .btn-success:hover {
+            background: #33ffcc;
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-main);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .metric-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--text-main);
+        }
+
+        .progress-track {
+            background: rgba(255, 255, 255, 0.1);
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            transition: width 0.3s, background-color 0.3s;
+        }
+
+        details {
+            color: #aaa;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        summary {
+            cursor: pointer;
+            color: var(--secondary);
+            outline: none;
+            margin-bottom: 5px;
+        }
+
+        details p {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 6px;
+            margin: 5px 0 0 0;
+            line-height: 1.6;
+        }
+
+        strong {
+            color: white;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        @keyframes flash-glow {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 255, 188, 0.7);
+                transform: scale(1);
+            }
+
+            50% {
+                box-shadow: 0 0 20px 10px rgba(0, 255, 188, 0);
+                transform: scale(1.05);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 255, 188, 0);
+                transform: scale(1);
+            }
+        }
+
+        .flash-active {
+            animation: flash-glow 0.5s ease-out;
+        }
+
+        @keyframes flash-glow-red {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 51, 102, 0.7);
+                transform: scale(1);
+            }
+
+            50% {
+                box-shadow: 0 0 20px 10px rgba(255, 51, 102, 0);
+                transform: scale(1.05);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 51, 102, 0);
+                transform: scale(1);
+            }
+        }
+
+        .flash-active-red {
+            animation: flash-glow-red 0.5s ease-out;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard">
+        <header>
+            <div>
+                <h1>Neural Architect <span class="badge">v2.0 GRU</span></h1>
+            </div>
+            <div>
+                <button class="btn-outline" onclick="clearChat()">🧹 Clear Chat</button>
+                <div style="display:inline-block; width: 10px;"></div>
+                <button class="btn-outline" onclick="saveBrain()">Save Brain</button>
+                <button class="btn-outline" onclick="document.getElementById('file-input').click()">Load Brain</button>
+                <input type="file" id="file-input" style="display: none;" onchange="loadBrain(this)">
+            </div>
+        </header>
+
+        <main class="terminal-container">
+            <div id="terminal">
+                <div style="color: var(--text-muted); text-align: center; margin-top: 150px;">
+                    Word-Level GRU Initialized.<br>Type a message to begin conceptual training...
+                </div>
+            </div>
+            <div class="input-area">
+                <input type="text" id="input" placeholder="Type your message here..."
+                    onkeypress="if(event.keyCode===13) send();" autocomplete="off">
+                <button class="btn-primary" onclick="send()">Send</button>
+            </div>
+        </main>
+
+        <section class="controls">
+            <div class="panel">
+                <div class="btn-group bottom">
+                    <button id="btn-reward" class="btn-success" onclick="reward()">Reward (Good)</button>
+                    <button id="btn-penalize" class="btn-danger" onclick="penalize()">Penalize (Bad)</button>
+                    <div style="width: 1px; background: rgba(255,255,255,0.1); margin: 0 10px;"></div>
+                    <button class="btn-outline" onclick="trainEpochs()">⚡ Train (5 Epochs)</button>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-right: 10px;">
+                        <input type="checkbox" id="strict-mode" style="width: 16px; height: 16px; cursor: pointer;">
+                        <label for="strict-mode"
+                            style="font-size: 0.75rem; color: var(--text-muted); cursor: pointer; text-transform: none;">Strict
+                            Mode</label>
+                    </div>
+                    <button id="btn-auto" class="btn-outline" onclick="autoTrain()">🤖 Auto Teach</button>
+                    <button class="btn-danger" style="margin-left: auto;" onclick="resetBrain()">Reset Brain</button>
+                </div>
+
+                <details>
+                    <summary><strong>📚 How to Teach (Guide)</strong></summary>
+                    <div style="background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 6px; margin-top: 10px;">
+                        <h4 style="margin: 0 0 10px 0; color: var(--secondary); font-size: 0.9rem;">Manual Training</h4>
+                        <ol style="margin: 0 0 15px 0; padding-left: 20px; line-height: 1.6; font-size: 0.85rem;">
+                            <li><strong>Chat</strong>: Type a message and hit Send.</li>
+                            <li><strong>Feedback</strong>: If the AI is wrong, click <strong>Penalize</strong> and enter
+                                the correction.</li>
+                            <li><strong>Cement</strong>: Click <strong>⚡ Train</strong> to run 5 light epochs on that
+                                correction.</li>
+                        </ol>
+
+                        <h4 style="margin: 0 0 10px 0; color: var(--secondary); font-size: 0.9rem;">🤖 Auto Training
+                            (Bulk Learning)</h4>
+                        <ol style="margin: 0; padding-left: 20px; line-height: 1.6; font-size: 0.85rem;">
+                            <li><strong>Prepare</strong>: Click <strong>Auto Train</strong> and paste pairs as
+                                <code>Trigger|Response</code>.
+                            </li>
+                            <li><strong>Variations</strong>: Support multi-answers (e.g.
+                                <code>Hello|Hi,Hi there</code>).
+                            </li>
+                            <li><strong>Monitor</strong>: The AI self-corrects through the list until it hits "Mastery".
+                            </li>
+                            <li><strong>Success</strong>: Reaching 85% accuracy over 3 loops triggers a final
+                                optimization phase.</li>
+                        </ol>
+                        <p
+                            style="margin-top: 15px; font-size: 0.8rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
+                            <strong>Tip</strong>: Aim for a Loss Value &lt; 1.0 for reliable, human-like responses.
+                        </p>
+                    </div>
+                </details>
+            </div>
+
+            <div class="panel stats-panel">
+                <div
+                    style="margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">
+                    <span class="metric-label">Creativity (Temperature)</span>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="range" id="temp-slider" min="0.1" max="2.0" step="0.1" value="0.7"
+                            style="flex: 1; accent-color: var(--secondary);"
+                            oninput="document.getElementById('temp-val').innerText = this.value">
+                        <span id="temp-val" class="metric-value" style="font-size: 1rem; width: 30px;">0.7</span>
+                    </div>
+                </div>
+
+                <span class="metric-label">Current Loss Value (Confusion Assessment)</span>
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <span class="metric-value" id="loss-display">--.----</span>
+                    <span id="loss-info" style="font-size: 0.8rem; color: var(--text-muted);">Lower is Better</span>
+                </div>
+                <div class="progress-track">
+                    <div id="loss-bar" class="progress-fill"></div>
+                </div>
+                <div id="auto-score"
+                    style="margin-top: 10px; font-size: 0.75rem; color: var(--text-muted); display: none;">
+                    <span style="color: #00ffbc;">✓ Rewards: <span id="reward-count">0</span></span> |
+                    <span style="color: #ff3366;">✗ Penalties: <span id="penalty-count">0</span></span> |
+                    <span>Loops: <span id="loop-count">0</span></span> |
+                    <span style="color: gold;">Mastery: <span id="mastery-percent">0</span>%</span> |
+                    <span style="color: var(--secondary);">Variant: <span id="variant-indicator">0/0</span></span> |
+                    <span style="color: #ffcc00;">Active: <span id="curriculum-indicator">0/0</span></span>
+                </div>
+
+                <div id="tech-stats" style="margin-top: 10px; font-size: 0.75rem; color: var(--text-muted);">
+                    <span style="color: #00b8ff;">Params: <span id="param-count">--</span></span> |
+                    <span style="color: #ff66ff;">Vocab: <span id="vocab-size">--</span></span> |
+                    <span style="color: #ff33ff;">Grad Loss: <span id="grad-norm">0.0000</span></span> |
+                    <span style="color: #00ff00;">Memory: <span id="replay-count">0</span></span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        window.onerror = function (msg, url, line, col, error) {
+            alert("Error: " + msg + "\nLine: " + line + "\nCol: " + col + "\nStack: " + (error ? error.stack : "n/a"));
+            let btn = document.querySelector('button[onclick="send()"]');
+            if (btn) btn.innerText = "Send";
+        };
+        window.onunhandledrejection = function (e) {
+            alert("Unhandled Promise Rejection: " + e.reason);
+        };
+
+        /* 
+         * UPGRADE: Math Utils includes Sigmoid for GRU gates
+         */
+        function createMatrix(rows, cols, value = 0) {
+            let m = new Array(rows);
+            for (let i = 0; i < rows; i++) {
+                m[i] = new Array(cols).fill(value);
+            }
+            return m;
+        }
+
+        function createRandomMatrix(rows, cols) {
+            let m = new Array(rows);
+            let scale = Math.sqrt(2.0 / (rows + cols));
+            for (let i = 0; i < rows; i++) {
+                m[i] = new Array(cols);
+                for (let j = 0; j < cols; j++) {
+                    m[i][j] = (Math.random() * 2 - 1) * scale;
+                }
+            }
+            return m;
+        }
+
+        function matmul(a, b) {
+            let rowsA = a.length, colsA = a[0].length, rowsB = b.length, colsB = b[0].length;
+            if (colsA !== rowsB) throw new Error("Matrix dimensions mismatch");
+            let result = createMatrix(rowsA, colsB, 0);
+            for (let i = 0; i < rowsA; i++) {
+                for (let j = 0; j < colsB; j++) {
+                    let sum = 0;
+                    for (let k = 0; k < colsA; k++) {
+                        sum += a[i][k] * b[k][j];
+                    }
+                    result[i][j] = sum;
+                }
+            }
+            return result;
+        }
+
+        function addMatrix(a, b) {
+            let rows = a.length, cols = a[0].length;
+            let result = createMatrix(rows, cols, 0);
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    result[i][j] = a[i][j] + b[i][j];
+                }
+            }
+            return result;
+        }
+
+        function subtractMatrix(a, b) {
+            let rows = a.length, cols = a[0].length;
+            let result = createMatrix(rows, cols, 0);
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    result[i][j] = a[i][j] - b[i][j];
+                }
+            }
+            return result;
+        }
+
+        function multiplyMatrix(a, b) {
+            let rows = a.length, cols = a[0].length;
+            let result = createMatrix(rows, cols, 0);
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    result[i][j] = a[i][j] * b[i][j];
+                }
+            }
+            return result;
+        }
+
+        function scaleMatrix(s, a) {
+            let rows = a.length, cols = a[0].length;
+            let result = createMatrix(rows, cols, 0);
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    result[i][j] = s * a[i][j];
+                }
+            }
+            return result;
+        }
+
+        function transpose(a) {
+            let rows = a.length, cols = a[0].length;
+            let result = createMatrix(cols, rows, 0);
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    result[j][i] = a[i][j];
+                }
+            }
+            return result;
+        }
+
+        function mapMatrix(m, func) {
+            let rows = m.length, cols = m[0].length;
+            let result = createMatrix(rows, cols, 0);
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    result[i][j] = func(m[i][j]);
+                }
+            }
+            return result;
+        }
+
+        function sigmoid(x) {
+            return 1 / (1 + Math.exp(-x));
+        }
+
+        function dsigmoid(y) {
+            return y * (1 - y);
+        }
+
+        function dtanh(y) {
+            return 1 - y * y;
+        }
+
+        function softmax(m) {
+            let arr = m.map(row => row[0]);
+            let max = Math.max(...arr);
+            let exps = arr.map(v => Math.exp(v - max));
+            let sum = exps.reduce((acc, v) => acc + v, 0);
+            let soft = exps.map(v => v / sum);
+            return soft.map(v => [v]);
+        }
+
+        function argmax(arr) {
+            let max = arr[0];
+            let maxIndex = 0;
+            for (let i = 1; i < arr.length; i++) {
+                if (arr[i] > max) {
+                    max = arr[i];
+                    maxIndex = i;
+                }
+            }
+            return maxIndex;
+        }
+
+        function sample(probs) {
+            let sum = 0;
+            let r = Math.random();
+            for (let i = 0; i < probs.length; i++) {
+                sum += probs[i];
+                if (r < sum) return i;
+            }
+            return probs.length - 1;
+        }
+
+        function fromArray(arr) {
+            return arr.map(v => [v]);
+        }
+
+        function toArray(m) {
+            return m.map(row => row[0]);
+        }
+
+        /*
+         * UPGRADE: Gated Recurrent Unit (GRU) with Embedding Layer
+         * Solves Vanishing Gradient (via Gates) and Concept Learning (via Embeddings)
+         */
+        class GRU {
+            constructor(vocabSize, hiddenSize, embedSize) {
+                this.vocabSize = vocabSize;
+                this.hiddenSize = hiddenSize;
+                this.embedSize = embedSize;
+                this.learning_rate = 0.002; // Increased for Adam stability
+
+                // Embedding Matrix: [EmbedSize x VocabSize]
+                this.Embed = createRandomMatrix(this.embedSize, this.vocabSize);
+
+                // GRU Gates
+                let concatSize = this.embedSize + this.hiddenSize;
+
+                // Update Gate (z)
+                this.Wz = createRandomMatrix(this.hiddenSize, concatSize);
+                this.bz = createMatrix(this.hiddenSize, 1, 0);
+
+                // Reset Gate (r)
+                this.Wr = createRandomMatrix(this.hiddenSize, concatSize);
+                this.br = createMatrix(this.hiddenSize, 1, 0);
+
+                // Candidate Hidden (h~)
+                this.Wh = createRandomMatrix(this.hiddenSize, concatSize);
+                this.bh = createMatrix(this.hiddenSize, 1, 0);
+
+                // Output (Decoder)
+                this.Why = createRandomMatrix(this.vocabSize, this.hiddenSize);
+                this.by = createMatrix(this.vocabSize, 1, 0);
+
+                // Adam Optimizer Buffers
+                this.m = {}; // First moment
+                this.v = {}; // Second moment
+                this.t = 0;   // Timestep
+                this.beta1 = 0.9;
+                this.beta2 = 0.999;
+                this.eps = 1e-8;
+
+                // Initialize buffers for all matrices
+                let keys = ['Wz', 'bz', 'Wr', 'br', 'Wh', 'bh', 'Why', 'by', 'Embed'];
+                keys.forEach(k => {
+                    this.m[k] = createMatrix(this[k].length, this[k][0].length, 0);
+                    this.v[k] = createMatrix(this[k].length, this[k][0].length, 0);
+                });
+            }
+
+            // Look up embedding vector for a token index
+            getEmbedding(idx) {
+                let vec = createMatrix(this.embedSize, 1);
+                for (let i = 0; i < this.embedSize; i++) {
+                    vec[i][0] = this.Embed[i][idx];
+                }
+                return vec;
+            }
+
+            getParameterCount() {
+                return (this.embedSize * this.vocabSize) +
+                    3 * (this.hiddenSize * (this.embedSize + this.hiddenSize + 1)) +
+                    (this.vocabSize * (this.hiddenSize + 1));
+            }
+
+            forward(inputs) {
+                let h = createMatrix(this.hiddenSize, 1, 0);
+                let caches = [];
+                let outputs = [];
+
+                for (let t = 0; t < inputs.length; t++) {
+                    let tokenIdx = inputs[t];
+                    // 1. Get Embedding
+                    let x = this.getEmbedding(tokenIdx);
+
+                    // 2. Concatenate [x, h_prev] for gates
+                    let concat = new Array(this.embedSize + this.hiddenSize);
+                    for (let i = 0; i < this.embedSize; i++) concat[i] = x[i];
+                    for (let i = 0; i < this.hiddenSize; i++) concat[this.embedSize + i] = h[i];
+
+                    // Concat matrix
+                    let xh = createMatrix(this.embedSize + this.hiddenSize, 1);
+                    for (let i = 0; i < xh.length; i++) xh[i][0] = concat[i][0];
+
+                    // 3. Update Gate z = sigmoid(Wz * xh + bz)
+                    let zraw = addMatrix(matmul(this.Wz, xh), this.bz);
+                    let z = mapMatrix(zraw, sigmoid);
+
+                    // 4. Reset Gate r = sigmoid(Wr * xh + br)
+                    let rraw = addMatrix(matmul(this.Wr, xh), this.br);
+                    let r = mapMatrix(rraw, sigmoid);
+
+                    // 5. Candidate h~ = tanh(Wh * [x, r*h] + bh)
+                    // We need to rebuild concat vector with reset h
+                    let rh = multiplyMatrix(r, h); // Element-wise
+
+                    let concat_cand = createMatrix(this.embedSize + this.hiddenSize, 1);
+                    for (let i = 0; i < this.embedSize; i++) concat_cand[i][0] = x[i][0];
+                    for (let i = 0; i < this.hiddenSize; i++) concat_cand[this.embedSize + i][0] = rh[i][0];
+
+                    let h_cand_raw = addMatrix(matmul(this.Wh, concat_cand), this.bh);
+                    let h_cand = mapMatrix(h_cand_raw, Math.tanh);
+
+                    // 6. New h = (1-z)*h_prev + z*h_cand
+                    let ones = createMatrix(this.hiddenSize, 1, 1);
+                    let z_inv = subtractMatrix(ones, z);
+                    let term1 = multiplyMatrix(z_inv, h);
+                    let term2 = multiplyMatrix(z, h_cand);
+                    let h_new = addMatrix(term1, term2);
+
+                    // Store for backprop
+                    caches.push({
+                        h_prev: h, x, xh, z, r, h_cand, rh, tokenIdx, concat_cand
+                    });
+
+                    h = h_new;
+
+                    // Output Decoder
+                    let o = addMatrix(matmul(this.Why, h), this.by);
+                    outputs.push(softmax(o));
+                }
+
+                return { outputs, caches, lastHidden: h };
+            }
+
+            train(inputs, targets) {
+                let { outputs, caches } = this.forward(inputs);
+                let loss = 0;
+
+                // Gradients initialization
+                let dEmbed = createMatrix(this.embedSize, this.vocabSize, 0);
+                let dWz = createMatrix(this.hiddenSize, this.embedSize + this.hiddenSize, 0);
+                let dWr = createMatrix(this.hiddenSize, this.embedSize + this.hiddenSize, 0);
+                let dWh = createMatrix(this.hiddenSize, this.embedSize + this.hiddenSize, 0);
+                let dbz = createMatrix(this.hiddenSize, 1, 0);
+                let dbr = createMatrix(this.hiddenSize, 1, 0);
+                let dbh = createMatrix(this.hiddenSize, 1, 0);
+                let dWhy = createMatrix(this.vocabSize, this.hiddenSize, 0);
+                let dby = createMatrix(this.vocabSize, 1, 0);
+
+                let dh_next = createMatrix(this.hiddenSize, 1, 0);
+
+                for (let t = outputs.length - 1; t >= 0; t--) {
+                    let targetIdx = targets[t];
+                    let probs = toArray(outputs[t]);
+                    loss += -Math.log(Math.max(probs[targetIdx], 1e-10));
+
+                    // Softmax Gradient
+                    let dy = createMatrix(this.vocabSize, 1, 0);
+                    for (let i = 0; i < this.vocabSize; i++) {
+                        dy[i][0] = probs[i] - (i === targetIdx ? 1 : 0);
+                    }
+
+                    // Output Weights Gradients
+                    let h_curr = (t < outputs.length - 1) ? caches[t + 1].h_prev : caches[t].h_prev; // actually h_new is stored as h_prev of next
+                    // Wait, caches[t] produced outputs[t]. caches[t] generated h_new (which is h for outputs[t]).
+                    // But caches[t].h_prev is h_{t-1}. 
+                    // We need h_t to calc dWhy. Let's recompute h_t or look ahead.
+                    // Ideally we stored h_t in forward. Let's assume h passed to Why is h_new.
+                    // Recalculating h_new for gradient locally:
+                    let c = caches[t];
+                    let ones = createMatrix(this.hiddenSize, 1, 1);
+                    let z_inv = subtractMatrix(ones, c.z);
+                    let h_new = addMatrix(multiplyMatrix(z_inv, c.h_prev), multiplyMatrix(c.z, c.h_cand));
+
+                    dWhy = addMatrix(dWhy, matmul(dy, transpose(h_new)));
+                    dby = addMatrix(dby, dy);
+
+                    // Gradient flow into h_t
+                    let dh = matmul(transpose(this.Why), dy);
+                    dh = addMatrix(dh, dh_next);
+
+                    // Backprop through GRU cell
+                    // h_new = (1-z)*h_prev + z*h_cand
+
+                    // d(h_cand)
+                    let dh_cand = multiplyMatrix(dh, c.z);
+                    let dtanh_term = mapMatrix(c.h_cand, dtanh); // (1 - h_cand^2)
+                    let d_raw_cand = multiplyMatrix(dh_cand, dtanh_term); // dh_cand * (1-tanh^2)
+
+                    // Weights Wh
+                    dWh = addMatrix(dWh, matmul(d_raw_cand, transpose(c.concat_cand)));
+                    dbh = addMatrix(dbh, d_raw_cand);
+
+                    // d(r)
+                    // inside Wh * concat_cand, the hidden part is (r * h_prev)
+                    let d_concat_cand = matmul(transpose(this.Wh), d_raw_cand);
+                    // Split d_concat_cand back to input and hidden parts
+                    let d_rh = createMatrix(this.hiddenSize, 1);
+                    let d_x_1 = createMatrix(this.embedSize, 1); // contribution from Cand
+                    for (let i = 0; i < this.embedSize; i++) d_x_1[i][0] = d_concat_cand[i][0];
+                    for (let i = 0; i < this.hiddenSize; i++) d_rh[i][0] = d_concat_cand[this.embedSize + i][0];
+
+                    let dr = multiplyMatrix(d_rh, c.h_prev);
+                    let d_raw_r = multiplyMatrix(dr, mapMatrix(c.r, dsigmoid)); // dr * r * (1-r)
+
+                    dWr = addMatrix(dWr, matmul(d_raw_r, transpose(c.xh)));
+                    dbr = addMatrix(dbr, d_raw_r);
+
+                    // d(z)
+                    // term1: -h_prev * dh
+                    // term2: h_cand * dh
+                    let dterm1 = multiplyMatrix(dh, scaleMatrix(-1, c.h_prev));
+                    let dterm2 = multiplyMatrix(dh, c.h_cand);
+                    let dz = addMatrix(dterm1, dterm2);
+                    let d_raw_z = multiplyMatrix(dz, mapMatrix(c.z, dsigmoid));
+
+                    dWz = addMatrix(dWz, matmul(d_raw_z, transpose(c.xh)));
+                    dbz = addMatrix(dbz, d_raw_z);
+
+                    // Next Hidden State Gradient (d_h_prev)
+                    // 1. From (1-z)*h_prev
+                    let dh_prev_1 = multiplyMatrix(dh, z_inv);
+                    // 2. From h_cand calculation (r * h_prev) -> d_rh * r
+                    let dh_prev_2 = multiplyMatrix(d_rh, c.r);
+                    // 3. From gates xh inputs
+                    let dz_xh = matmul(transpose(this.Wz), d_raw_z);
+                    let dr_xh = matmul(transpose(this.Wr), d_raw_r);
+
+                    // Extract hidden part from gate inputs
+                    let dh_prev_3 = createMatrix(this.hiddenSize, 1);
+                    let dh_prev_4 = createMatrix(this.hiddenSize, 1);
+                    for (let i = 0; i < this.hiddenSize; i++) {
+                        dh_prev_3[i][0] = dz_xh[this.embedSize + i][0];
+                        dh_prev_4[i][0] = dr_xh[this.embedSize + i][0];
+                    }
+
+                    dh_next = addMatrix(addMatrix(dh_prev_1, dh_prev_2), addMatrix(dh_prev_3, dh_prev_4));
+
+                    // Embeddings Gradient
+                    // dx comes from xh (z gate, r gate) and concat_cand (h gate)
+                    let dx_z = createMatrix(this.embedSize, 1);
+                    let dx_r = createMatrix(this.embedSize, 1);
+                    for (let i = 0; i < this.embedSize; i++) {
+                        dx_z[i][0] = dz_xh[i][0];
+                        dx_r[i][0] = dr_xh[i][0];
+                    }
+                    let dx = addMatrix(addMatrix(dx_z, dx_r), d_x_1);
+
+                    // Update specific column in Embed matrix
+                    for (let i = 0; i < this.embedSize; i++) {
+                        dEmbed[i][c.tokenIdx] += dx[i][0];
+                    }
+                }
+
+                // Global Gradient Norm Clipping
+                let totalGradNorm = 0;
+                let grads = { Wz: dWz, Wr: dWr, Wh: dWh, Why: dWhy, bz: dbz, br: dbr, bh: dbh, by: dby, Embed: dEmbed };
+
+                for (let key in grads) {
+                    let m = grads[key];
+                    for (let i = 0; i < m.length; i++) {
+                        for (let j = 0; j < m[i].length; j++) {
+                            totalGradNorm += m[i][j] * m[i][j];
+                        }
+                    }
+                }
+                totalGradNorm = Math.sqrt(totalGradNorm);
+
+                let maxNorm = 5.0; // Global clip threshold
+                if (totalGradNorm > maxNorm) {
+                    let scale = maxNorm / totalGradNorm;
+                    for (let key in grads) {
+                        grads[key] = scaleMatrix(scale, grads[key]);
+                    }
+                }
+
+                // Adam Update
+                this.t++;
+                let intensity = arguments[2] || 1.0;
+                let lr = this.learning_rate * intensity;
+
+                // Bias correction factors
+                let bc1 = 1 - Math.pow(this.beta1, this.t);
+                let bc2 = 1 - Math.pow(this.beta2, this.t);
+
+                for (let key in grads) {
+                    let param = this[key];
+                    let grad = grads[key];
+                    let m = this.m[key];
+                    let v = this.v[key];
+
+                    for (let i = 0; i < param.length; i++) {
+                        for (let j = 0; j < param[i].length; j++) {
+                            let g = grad[i][j];
+                            // Update moments
+                            m[i][j] = this.beta1 * m[i][j] + (1 - this.beta1) * g;
+                            v[i][j] = this.beta2 * v[i][j] + (1 - this.beta2) * g * g;
+
+                            // Apply parameters
+                            let m_hat = m[i][j] / bc1;
+                            let v_hat = v[i][j] / bc2;
+                            param[i][j] -= lr * m_hat / (Math.sqrt(v_hat) + this.eps);
+                        }
+                    }
+                }
+
+                return { loss: loss / outputs.length, gradNorm: totalGradNorm };
+            }
+
+            generate(startTokens, maxLen) {
+                let temp = parseFloat(document.getElementById('temp-slider').value) || 0.7;
+                let h = createMatrix(this.hiddenSize, 1, 0);
+
+                // Warm up hidden state
+                for (let t = 0; t < startTokens.length; t++) {
+                    let tokenIdx = startTokens[t];
+                    let x = this.getEmbedding(tokenIdx);
+
+                    let concat = new Array(this.embedSize + this.hiddenSize);
+                    for (let i = 0; i < this.embedSize; i++) concat[i] = x[i];
+                    for (let i = 0; i < this.hiddenSize; i++) concat[this.embedSize + i] = h[i];
+                    let xh = createMatrix(this.embedSize + this.hiddenSize, 1);
+                    for (let i = 0; i < xh.length; i++) xh[i][0] = concat[i][0];
+
+                    let z = mapMatrix(addMatrix(matmul(this.Wz, xh), this.bz), sigmoid);
+                    let r = mapMatrix(addMatrix(matmul(this.Wr, xh), this.br), sigmoid);
+
+                    let rh = multiplyMatrix(r, h);
+                    let concat_cand = createMatrix(this.embedSize + this.hiddenSize, 1);
+                    for (let i = 0; i < this.embedSize; i++) concat_cand[i][0] = x[i][0];
+                    for (let i = 0; i < this.hiddenSize; i++) concat_cand[this.embedSize + i][0] = rh[i][0];
+
+                    let h_cand = mapMatrix(addMatrix(matmul(this.Wh, concat_cand), this.bh), Math.tanh);
+
+                    let ones = createMatrix(this.hiddenSize, 1, 1);
+                    let z_inv = subtractMatrix(ones, z);
+                    h = addMatrix(multiplyMatrix(z_inv, h), multiplyMatrix(z, h_cand));
+                }
+
+                let generatedIndices = [];
+                let currentIdx = startTokens[startTokens.length - 1];
+
+                for (let i = 0; i < maxLen; i++) {
+                    let o = addMatrix(matmul(this.Why, h), this.by);
+
+                    // Temp Sampling with MASKING
+                    let logits = toArray(o).map(v => v / temp);
+
+                    // Repetition Penalty: Discourage saying the same word twice in a row/shortly
+                    generatedIndices.forEach(prevIdx => {
+                        logits[prevIdx] -= 1.5;
+                    });
+
+                    // MASK: Set extremely low probability for <RESERVED> slots
+                    // This forces the model to only pick from words it actually "knows"
+                    vocab.forEach((w, idx) => {
+                        if (w === "<RESERVED>" || w === UNK_TOKEN || w === START_TOKEN) {
+                            logits[idx] = -1e10;
+                        }
+                    });
+
+                    let maxLogit = Math.max(...logits);
+                    let exps = logits.map(v => Math.exp(v - maxLogit));
+                    let sum = exps.reduce((a, b) => a + b, 0);
+                    let probs = exps.map(v => v / sum);
+
+                    let nextIdx = sample(probs);
+                    let word = vocab[nextIdx];
+
+                    generatedIndices.push(nextIdx);
+                    if (word === END_TOKEN) break;
+
+                    currentIdx = nextIdx;
+
+                    // Feed back in
+                    let x = this.getEmbedding(currentIdx);
+                    let concat = new Array(this.embedSize + this.hiddenSize);
+                    for (let j = 0; j < this.embedSize; j++) concat[j] = x[j];
+                    for (let j = 0; j < this.hiddenSize; j++) concat[this.embedSize + j] = h[j];
+                    let xh = createMatrix(this.embedSize + this.hiddenSize, 1);
+                    for (let j = 0; j < xh.length; j++) xh[j][0] = concat[j][0];
+
+                    let z = mapMatrix(addMatrix(matmul(this.Wz, xh), this.bz), sigmoid);
+                    let r = mapMatrix(addMatrix(matmul(this.Wr, xh), this.br), sigmoid);
+                    let rh = multiplyMatrix(r, h);
+                    let concat_cand = createMatrix(this.embedSize + this.hiddenSize, 1);
+                    for (let j = 0; j < this.embedSize; j++) concat_cand[j][0] = x[j][0];
+                    for (let j = 0; j < this.hiddenSize; j++) concat_cand[this.embedSize + j][0] = rh[j][0];
+                    let h_cand = mapMatrix(addMatrix(matmul(this.Wh, concat_cand), this.bh), Math.tanh);
+                    let ones = createMatrix(this.hiddenSize, 1, 1);
+                    let z_inv = subtractMatrix(ones, z);
+                    h = addMatrix(multiplyMatrix(z_inv, h), multiplyMatrix(z, h_cand));
+                }
+                return generatedIndices;
+            }
+        }
+
+        /*
+         * UPGRADE: Word-Level Tokenizer & Dynamic Vocabulary
+         */
+        const START_TOKEN = "<START>";
+        const END_TOKEN = "<END>";
+        const UNK_TOKEN = "<UNK>";
+
+        // Initial common English words to seed understanding
+        let vocab = [
+            START_TOKEN, END_TOKEN, UNK_TOKEN,
+            "hello", "hi", "hey", "i", "am", "you", "are", "is", "what",
+            "who", "name", "good", "bad", "yes", "no", "assistant", "ai",
+            "neural", "network", "train", "learning", "thanks", "please",
+            ".", "?", "!", ",", ".]"
+        ];
+        let wordToIdx = {};
+        vocab.forEach((w, i) => wordToIdx[w] = i);
+
+        function tokenize(text) {
+            // Split by words, keeping punctuation. Preserve CASE.
+            return text
+                .replace(/([.,!?;:])/g, ' $1 ')
+                .split(/\s+/)
+                .filter(w => w.length > 0);
+        }
+
+        function getIndex(word) {
+            if (wordToIdx[word] !== undefined) return wordToIdx[word];
+
+            // Assign to first available RESERVED slot
+            let slot = vocab.findIndex(w => w === "<RESERVED>");
+            if (slot !== -1) {
+                vocab[slot] = word;
+                wordToIdx[word] = slot;
+                return slot;
+            }
+            return wordToIdx[UNK_TOKEN];
+        }
+
+        // Initialize GRU with capacity
+        // To handle dynamic vocab properly in a simple file, we reserve space.
+        const VOCAB_CAPACITY = 5000;
+        const EMBED_SIZE = 64;
+        const HIDDEN_SIZE = 1024;
+
+        // Fill vocab to capacity with placeholders to avoid index errors
+        while (vocab.length < VOCAB_CAPACITY) {
+            vocab.push("<RESERVED>");
+        }
+        // Rebuild map
+        wordToIdx = {};
+        vocab.forEach((w, i) => wordToIdx[w] = i);
+
+        let rnn = new GRU(VOCAB_CAPACITY, HIDDEN_SIZE, EMBED_SIZE);
+
+        let historyTokens = [];
+        let historyTextDisplay = '';
+        let lastLoss = 0.0;
+        let smoothLoss = 0.0;
+        let replayBuffer = []; // stores {inputs, targets}
+        let isAutoTraining = false;
+        let trainingQueue = [];
+        let currentPairIndex = 0;
+        let consecutiveWins = 0;
+        let autoLoopCount = 0;
+        let rewardCount = 0;
+        let penaltyCount = 0;
+        let currentVariantIndex = 0;
+        let isCurriculumMode = false;
+        let curriculumLimit = 1;
+        let lastResponseTokenCount = 0; // Tracks tokens generated in the last turn
+
+        async function send() {
+            try {
+                let userMsg = document.getElementById('input').value.trim();
+                if (userMsg === '') return;
+
+                let btn = document.querySelector('button[onclick="send()"]');
+                let originalText = btn.innerText;
+                btn.innerText = "Thinking...";
+                await new Promise(r => setTimeout(r, 10));
+
+                document.getElementById('input').value = '';
+
+                if (historyTextDisplay === '') {
+                    document.getElementById('terminal').innerHTML = '';
+                    historyTokens = [];
+                }
+
+                // Tokenize Input
+                let uTokens = tokenize(userMsg);
+
+                // Update history
+                if (historyTokens.length > 0) historyTokens.push(getIndex(".]")); // separator
+                uTokens.forEach(w => {
+                    historyTokens.push(getIndex(w));
+                });
+
+                let userLine = `<span class="user-line">User:</span> ${userMsg}`;
+                let newHistoryDisplay = (document.getElementById('terminal').innerHTML + '\n' + userLine).trim();
+                updateTerminalHTML(newHistoryDisplay + '\n<span class="ai-line">Assistant:</span> ...');
+                await new Promise(r => setTimeout(r, 10));
+
+                // Generate Response
+                let genIndices = rnn.generate(historyTokens, 15); // Generate 15 words max
+                lastResponseTokenCount = 0; // Reset for this turn
+
+                let responseWords = [];
+                for (let idx of genIndices) {
+                    let w = vocab[idx];
+                    // Skip ALL meta-tokens and the technical separator from UI
+                    if (w === START_TOKEN || w === "<RESERVED>" || w === UNK_TOKEN || w === ".]") continue;
+                    if (w === END_TOKEN) break;
+                    responseWords.push(w);
+                    historyTokens.push(idx);
+                    lastResponseTokenCount++; // Track tokens added to history
+                    if (w === '.' || w === '?' || w === '!') break;
+                }
+
+                let response = responseWords.join(' ').replace(/ ([.,!?;:])/g, '$1');
+                if (response === '') response = "..."; // Safety fallback
+
+                historyTextDisplay += 'User: ' + userMsg + '\nAssistant: ' + response + '\n';
+
+                let finalDisplay = newHistoryDisplay + `\n<span class="ai-line">Assistant:</span> ${response}`;
+                updateTerminalHTML(finalDisplay);
+
+                // Update Stats
+                updateTechStats();
+
+                btn.innerText = originalText;
+            } catch (e) {
+                alert("Error in send(): " + e.message);
+                console.error(e);
+            }
+        }
+
+        function updateTerminalHTML(htmlContent) {
+            let term = document.getElementById('terminal');
+            term.innerHTML = htmlContent.replace(/\n/g, '<br>');
+            term.scrollTop = term.scrollHeight;
+        }
+
+        // Manual Training Logic adapted for Tokens
+        async function reward() {
+            let btn = document.getElementById('btn-reward');
+            btn.classList.add('flash-active');
+            setTimeout(() => btn.classList.remove('flash-active'), 500);
+            await new Promise(r => setTimeout(r, 100));
+
+            // RUN 2 MINI-EPOCHS for Reward
+            for (let i = 0; i < 2; i++) {
+                trainOnHistory(1.0); // Normal intensity
+                if (i < 1) await new Promise(r => setTimeout(r, 0)); // Yield to UI
+            }
+
+            // Save to replay buffer if it's a "clean" finish
+            if (historyTokens.length >= 4) {
+                let start = Math.max(0, historyTokens.length - 20);
+                replayBuffer.push({
+                    inputs: historyTokens.slice(start, historyTokens.length - 1),
+                    targets: historyTokens.slice(start + 1)
+                });
+                if (replayBuffer.length > 100) replayBuffer.shift(); // Keep last 100 successes
+            }
+        }
+
+        async function penalize(forcedCorrection = null) {
+            let btn = document.getElementById('btn-penalize');
+            btn.classList.add('flash-active-red');
+            setTimeout(() => btn.classList.remove('flash-active-red'), 500);
+            await new Promise(r => setTimeout(r, 100));
+
+            let correct = forcedCorrection;
+            if (correct === null) correct = prompt('What should the response be?');
+            if (correct == null || correct.trim() === '') return;
+
+            // Remove last bad response from historyTokens
+            for (let i = 0; i < lastResponseTokenCount; i++) {
+                historyTokens.pop();
+            }
+            lastResponseTokenCount = 0; // Reset after clearing
+
+            // Re-tokenize the correction
+            let correctTokens = tokenize(correct);
+
+            // Backtrack tokens until we find punctuation or user start? 
+            // Hard to do strictly with just arrays. 
+            // Strategy: We assume the last added tokens were the AI's.
+            // A safer bet for this demo: Just append correction to history and train.
+            // Actually, let's remove the last response visually and logically.
+
+            let term = document.getElementById('terminal');
+            let html = term.innerHTML;
+            let lastAiIndex = html.lastIndexOf('<span class="ai-line">Assistant:</span>');
+            if (lastAiIndex > -1) {
+                term.innerHTML = html.substring(0, lastAiIndex) + `<span class="ai-line">Assistant:</span> ${correct}`;
+            }
+
+            // Fix Tokens: Pop until last known point? Hard to track. 
+            // We will just push the correction tokens. Ideally we pop the bad ones.
+            // Let's pop 10 tokens (arbitrary bad response length) or reset?
+            // Better: For "Penalize", we reinforce the pattern: Context -> Correct Answer.
+            // We strip the last few tokens and replace.
+
+            correctTokens.forEach(w => {
+                let idx = wordToIdx[w];
+                if (idx === undefined) idx = wordToIdx[UNK_TOKEN];
+                historyTokens.push(idx);
+            });
+
+            // RUN 5 MINI-EPOCHS for Penalty/Correction
+            for (let i = 0; i < 5; i++) {
+                trainOnHistory(1.5); // Moderate intensity for corrections
+                await new Promise(r => setTimeout(r, 0)); // Yield to UI
+            }
+
+            // Add correction to replay buffer
+            replayBuffer.push({
+                inputs: historyTokens.slice(Math.max(0, historyTokens.length - 10), historyTokens.length - 1),
+                targets: historyTokens.slice(Math.max(1, historyTokens.length - 9))
+            });
+            if (replayBuffer.length > 100) replayBuffer.shift();
+        }
+
+        let lastGradNorm = 0.0;
+        function trainOnHistory(intensity = 1.0) {
+            // Context window: Train on last 40 tokens
+            let start = Math.max(0, historyTokens.length - 40);
+            let subset = historyTokens.slice(start);
+
+            let totalLoss = 0;
+            let count = 0;
+
+            // 1. Train on Current Context
+            if (subset.length >= 2) {
+                let inputs = subset.slice(0, subset.length - 1);
+                let targets = subset.slice(1);
+                let result = rnn.train(inputs, targets, intensity);
+                lastGradNorm = result.gradNorm;
+                totalLoss += result.loss;
+                count++;
+            }
+
+            // 2. STOCHASTIC REPLAY: Train on 1 random past success
+            if (replayBuffer.length > 0) {
+                let idx = Math.floor(Math.random() * replayBuffer.length);
+                let sample = replayBuffer[idx];
+                let result = rnn.train(sample.inputs, sample.targets, intensity * 0.5); // Half intensity for replay
+                totalLoss += result.loss;
+                count++;
+            }
+
+            if (count > 0) {
+                let avgLoss = totalLoss / count;
+                updateLossUI(avgLoss);
+                return avgLoss;
+            }
+            return 0;
+        }
+
+        function updateLossUI(loss) {
+            lastLoss = loss;
+            // Moving average for smoother UI
+            smoothLoss = smoothLoss === 0 ? loss : smoothLoss * 0.9 + loss * 0.1;
+
+            document.getElementById('loss-display').innerText = smoothLoss.toFixed(4);
+            let percent = Math.max(0, Math.min(100, (1 - (smoothLoss / 5)) * 100));
+            document.getElementById('loss-bar').style.width = percent + "%";
+            document.getElementById('loss-bar').style.backgroundColor = smoothLoss < 1.0 ? '#0f0' : (smoothLoss < 3.0 ? '#ff0' : '#f00');
+            updateTechStats();
+        }
+
+        function updateTechStats() {
+            let count = rnn.getParameterCount();
+            let display = count >= 1000000 ? (count / 1000000).toFixed(2) + "M" : (count / 1000).toFixed(0) + "k";
+            document.getElementById('param-count').innerText = display;
+            let usedVocab = vocab.filter(w => w !== "<RESERVED>").length;
+            document.getElementById('vocab-size').innerText = usedVocab + " / " + VOCAB_CAPACITY;
+            document.getElementById('grad-norm').innerText = lastGradNorm.toFixed(4);
+            document.getElementById('replay-count').innerText = replayBuffer.length;
+        }
+
+        async function trainEpochs() {
+            let btn = document.querySelector('button[onclick="trainEpochs()"]');
+            btn.innerText = "Training...";
+            await new Promise(r => setTimeout(r, 10));
+            try {
+                for (let i = 0; i < 5; i++) {
+                    trainOnHistory(2.0); // Boosted training
+                    if (i % 2 === 0) await new Promise(r => setTimeout(r, 0));
+                }
+            } finally {
+                btn.innerText = "⚡ Train (5 Epochs)";
+            }
+        }
+
+        function saveBrain() {
+            let data = {
+                vocab: vocab, // Save words!
+                rnn: {
+                    Embed: rnn.Embed,
+                    Wz: rnn.Wz, bz: rnn.bz,
+                    Wr: rnn.Wr, br: rnn.br,
+                    Wh: rnn.Wh, bh: rnn.bh,
+                    Why: rnn.Why, by: rnn.by
+                }
+            };
+            let blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+            let a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = "gru_brain_v2.json";
+            a.click();
+        }
+
+        function loadBrain(input) {
+            let file = input.files[0];
+            if (!file) return;
+            let reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    let data = JSON.parse(e.target.result);
+                    // Load vocab
+                    vocab = data.vocab;
+                    wordToIdx = {};
+                    vocab.forEach((w, i) => wordToIdx[w] = i);
+
+                    // Load Matrices
+                    rnn.Embed = data.rnn.Embed;
+                    rnn.Wz = data.rnn.Wz; rnn.bz = data.rnn.bz;
+                    rnn.Wr = data.rnn.Wr; rnn.br = data.rnn.br;
+                    rnn.Wh = data.rnn.Wh; rnn.bh = data.rnn.bh;
+                    rnn.Why = data.rnn.Why; rnn.by = data.rnn.by;
+
+                    alert("Brain v2 loaded!");
+                } catch (err) {
+                    alert("Error: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function resetBrain() {
+            if (!confirm("Reset Brain?")) return;
+            location.reload();
+        }
+
+        function clearChat() {
+            historyTokens = [];
+            document.getElementById('terminal').innerHTML = '<div style="color:var(--text-muted);text-align:center;margin-top:150px;">Chat Cleared.<br>Memory Intact.</div>';
+        }
+
+        // Auto Train Logic (adapted to tokenize strings)
+        async function autoTrain() {
+            if (isAutoTraining) {
+                isAutoTraining = false;
+                document.getElementById('btn-auto').innerText = "🤖 Auto Train";
+                return;
+            }
+            let input = prompt("Enter pairs: Trigger|Response");
+            if (!input) return;
+
+            trainingQueue = [];
+            let rawPairs = input.split(/[\n;]+/);
+            for (let p of rawPairs) {
+                if (!p.includes('|')) continue;
+                let parts = p.split('|');
+                if (parts.length >= 2) {
+                    let targetString = parts[1].trim();
+                    let variants = targetString.split(',').map(v => v.trim()).filter(v => v !== '');
+                    trainingQueue.push({
+                        trigger: parts[0].trim(),
+                        targets: variants
+                    });
+                }
+            }
+
+            if (trainingQueue.length === 0) return;
+
+            isCurriculumMode = confirm("Enable Curriculum Mode?");
+            curriculumLimit = isCurriculumMode ? 1 : trainingQueue.length;
+
+            currentPairIndex = 0;
+            consecutiveWins = 0;
+            autoLoopCount = 0;
+            rewardCount = 0;
+            penaltyCount = 0;
+            document.getElementById('auto-score').style.display = 'block';
+            isAutoTraining = true;
+            document.getElementById('btn-auto').innerText = "⏹ Stop Auto";
+
+            await new Promise(r => setTimeout(r, 100));
+            autoTrainLoop();
+        }
+
+        async function autoTrainLoop() {
+            if (!isAutoTraining) return;
+
+            let currentPair = trainingQueue[currentPairIndex];
+            document.getElementById('input').value = currentPair.trigger;
+            await send(); // Sends and updates history
+
+            if (!isAutoTraining) return;
+            await new Promise(r => setTimeout(r, 500)); // Faster loop for tokens
+
+            // Check correctness (Text Matching)
+            // We get the raw text from the terminal HTML to compare
+            let term = document.getElementById('terminal');
+            let text = term.innerText;
+            let lines = text.trim().split('\n');
+            let lastLine = lines[lines.length - 1];
+            let lastResponse = lastLine.replace('Assistant:', '').trim();
+
+            // Normalized comparison
+            let isStrict = document.getElementById('strict-mode').checked;
+            let normResp, targetsNorm;
+
+            if (isStrict) {
+                // Exact match (including case and punctuation)
+                normResp = lastResponse.trim();
+                targetsNorm = currentPair.targets.map(t => t.trim());
+            } else {
+                // Lenient match (ignore case/punctuation)
+                const clear = (s) => s.toLowerCase().replace(/[^\w\s]/g, '').trim();
+                normResp = clear(lastResponse);
+                targetsNorm = currentPair.targets.map(t => clear(t));
+            }
+
+            let isCorrect = targetsNorm.includes(normResp);
+
+            document.getElementById('variant-indicator').innerText = (currentVariantIndex + 1) + '/' + currentPair.targets.length;
+            document.getElementById('curriculum-indicator').innerText = curriculumLimit + '/' + trainingQueue.length;
+
+            if (isCorrect) {
+                consecutiveWins++;
+                rewardCount++;
+                document.getElementById('reward-count').innerText = rewardCount;
+                await reward();
+
+                if (consecutiveWins >= 3) {
+                    consecutiveWins = 0;
+                    currentPairIndex = (currentPairIndex + 1) % curriculumLimit;
+
+                    if (currentPairIndex === 0) {
+                        autoLoopCount++;
+                        document.getElementById('loop-count').innerText = autoLoopCount;
+                        if (isCurriculumMode && curriculumLimit < trainingQueue.length && autoLoopCount > 1) {
+                            curriculumLimit++;
+                            autoLoopCount = 0;
+                        }
+                    }
+                }
+            } else {
+                consecutiveWins = 0;
+                penaltyCount++;
+                document.getElementById('penalty-count').innerText = penaltyCount;
+                await penalize(currentPair.targets[0]);
+            }
+
+            let total = rewardCount + penaltyCount;
+            document.getElementById('mastery-percent').innerText = total ? ((rewardCount / total) * 100).toFixed(1) : 0;
+
+            if (isAutoTraining) {
+                setTimeout(() => {
+                    clearChat();
+                    setTimeout(autoTrainLoop, 200);
+                }, 1000);
+            }
+        }
+
+        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+            navigator.serviceWorker.register('./sw.js').catch(console.log);
+        }
+        window.addEventListener('load', updateTechStats);
+    </script>
+</body>
+
+</html>
